@@ -160,7 +160,7 @@ export async function handle(message: Json, run: Runner): Promise<Json | null> {
       return reply({
         protocolVersion: PROTOCOL_VERSIONS.includes(asked) ? asked : PROTOCOL_VERSIONS[0],
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "asc-payout", title: "asc-payout", version: pkg.version },
+        serverInfo: { name: "asc-payout", title: "ASC Payout: App Store Earnings", version: pkg.version },
         instructions: INSTRUCTIONS,
       });
     }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.4
+
+- The Claude Desktop extension and the MCP server are called "ASC Payout: App Store Earnings".
+
 ## 1.8.3
 
 - Claude Desktop extension: it now connects. Claude Desktop runs extensions with its own Node in a helper process, whose standard streams can't be handed to another program; the extension now passes the messages between Claude Desktop and asc-payout itself.
