@@ -19,15 +19,14 @@ Each entry of `results`:
 | `account.name`, `account.vendor` | Account name and vendor number |
 | `month`, `period.start`, `period.end` | Fiscal month and its first/last day |
 | `currency` | Currency of every amount in this result |
-| `payment.amount` | **What Apple pays for this month.** From Reports when published, otherwise an estimate |
-| `payment.basis` | `reports` (final), `forecast` (month running, Trends so far + forecast), `trends` (month complete, no Financial Report yet), `trends-so-far` (month running, no forecast yet) |
+| `payment.amount` | **What Apple pays for this month** when `basis` is `reports`; before that, the real sales so far (no projection) |
+| `payment.basis` | `reports` (final, Apple's Financial Report), `trends` (month complete, no Financial Report yet: Trends total), `trends-so-far` (month running: Trends so far) |
 | `payment.date`, `payment.paid` | Expected payment day; `true` once that day has passed |
 | `reports.status` | `ok`, `in-progress` (month not over), `not-published` (Apple hasn't published it yet), `none` (nothing was settled), `no-access` (the key lacks the Finance role), `failed` (`reports.message` says why) |
 | `reports.total` | Financial Report total, or `null` when not available |
 | `reports.mismatches[]` | Currencies whose rows don't add up to the report's own summary (should be empty) |
 | `trends.total` | Sum of the daily Sales reports for the period (so far) |
 | `trends.days`, `trends.available`, `trends.through` | Days in the period, days with a published report, last day included |
-| `trends.forecast` | `{ total, perDay, remainingDays, basisDays }` while the month is running |
 | `trends.problems[]` | Days that could not be read (not counted as zero) |
 | `trends.skipped` | `true` when daily reports were not downloaded (a history month that already has its Financial Report) |
 | `apps[]` | Per app, largest first: `name`, `appId` (App Store ID, when known), `reports`, `trends`, and `items[]` per product (in-app purchases, subscriptions) with the same fields |

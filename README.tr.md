@@ -7,7 +7,7 @@
 **Apple bu ay bana ne kadar ödeyecek?** `asc-payout` bunu kendi App Store Connect verinizden, Apple'ın mali aylarına göre hesaplar ve iki kaynağı yan yana gösterir:
 
 - **Raporlar** (Reports): Apple'ın Finansal Raporu (Financial Report). Kesin rakamdır, ödeme buna göre yapılır. Ay kapandıktan birkaç gün sonra yayınlanır.
-- **Trendler** (Trends): Ayın her günü için günlük Satış raporlarının toplamı. Ay devam ederken de görünür; ay sonu tahmini de verir.
+- **Trendler** (Trends): Ayın her günü için günlük Satış raporlarının toplamı. Ay devam ederken de görünür: şu ana kadarki gerçek satış.
 
 Bir veya birden fazla geliştirici hesabı desteklenir. Her para birimi ay sonu kuruyla çevrilir. Ayrıca: uygulama ayrıntıları, iadeler ve iptaller, Apple Ads sonrası kâr, aylık hedefler. Menüler ve ekranlar Türkçe.
 
@@ -64,10 +64,10 @@ Bir ay ekranında **d**'ye basıp bir uygulama seçin: ürünleri, gün gün sat
 
 ### Aylık hedefler
 
-Ayarlar > Aylık hedefler: her hesap için ve tüm hesaplar için birer hedef, istediğiniz para biriminde. Ay ekranı hedefin ne kadarına ulaştığınızı gösterir; ay sürerken tahminin hedefe yetip yetmediğini de söyler:
+Ayarlar > Aylık hedefler: her hesap için ve tüm hesaplar için birer hedef, istediğiniz para biriminde. Ay ekranı, şu ana kadarki gerçek satışa göre hedefin ne kadarına ulaştığınızı gösterir:
 
 ```
-  Hedef     ██████████████░░  85%  $851,12 / $1.000,00  ·  yolunda (tahmin ~$1.142,90)
+  Hedef     ██████████████░░  85%  $851,12 / $1.000,00  ·  $148,88 kaldı
 ```
 
 ### Apple Ads sonrası kâr
@@ -132,7 +132,7 @@ Uzantı, kurulu `asc-payout`'u `asc-payout mcp` ile başlatır. Bulamazsa Claude
 
 ### Agent Skill
 
-Komut çalıştırabilen kodlama asistanları için depoda bir [Agent Skill](skills/asc-payout/SKILL.md) de var. Aynı soruları `asc-payout`'u `--json` ile çalıştırıp sonucu doğru okuyarak (mali aylar, Raporlar ve Trendler, tahmin ve kesin rakam farkı) cevaplamayı öğretir. Anahtarlarınızı asla okumaz ve göstermez.
+Komut çalıştırabilen kodlama asistanları için depoda bir [Agent Skill](skills/asc-payout/SKILL.md) de var. Aynı soruları `asc-payout`'u `--json` ile çalıştırıp sonucu doğru okuyarak (mali aylar, Raporlar ve Trendler, şu ana kadarki satış ile kesin ödemenin farkı) cevaplamayı öğretir. Anahtarlarınızı asla okumaz ve göstermez.
 
 **Claude Code**, eklenti olarak:
 
@@ -173,7 +173,7 @@ Sonra normal cümlelerle sorun. Hesap kurulumu size kalır: kendi terminalinizde
 - **Reports**: `Extended Partner Share`, `Partner Share Currency` bazında toplanır ve raporun sonundaki ülke özetiyle karşılaştırılır.
 - **Trends**: Her günün raporunda `Units × Developer Proceeds` toplanır; iadeler negatif adetle düşer. Henüz yayınlanmamış günler ile satış olmayan günler ayrılır, okunamayan günler sıfır sayılmaz, listelenir.
 - **Farkın kesin açıklaması**: Financial Detail raporundaki işlem tarihleriyle fark ikiye ayrılır: aydan önce yapılıp bu raporda ödenen satışlar ve bu ayın bir sonraki rapora kalan satışları; ikisi farkı kuruşu kuruşuna verir.
-- **Tahmin**: Devam eden ayda şu ana kadarki satış + kalan günler × son 7 günün ortalaması.
+- **Sadece gerçek rakamlar, tahmin yok**: Ay devam ederken şu ana kadarki satış (Apple yayınladıkça gün gün Trendler) gösterilir ve ödemenin henüz kesin olmadığı yazılır. Ödeme tutarı Apple'ın Finansal Raporu'dur; Apple yayınlayınca gösterilir. Ortalamadan ay sonu tahmini yapılmaz.
 - **Kurlar**: İki sütun da ayın son günündeki kurla çevrilir (ECB; ECB'de olmayanlar için exchange-api ve open.er-api). Kuru bulunamayan tutar ayrıca listelenir, asla 1:1 sayılmaz.
 - **Fark**: Normal bir ayda Reports ile Trends birkaç yüzde farklıdır; ay sınırındaki satışlar komşu aya, iadeler farklı tarihe düşebilir, bazı düzeltmeler sadece Reports'ta görünür.
 - **Yarım iş kullanılmaz**: İndirilen raporlar önbelleğe tek adımda yazılır ve her kullanımda kendi satır sayısı veya toplamlarıyla kontrol edilir; bozuk dosya silinip yeniden indirilir.

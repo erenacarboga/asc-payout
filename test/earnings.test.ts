@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { appOf, type Catalog } from "../src/asc/catalog";
-import { forecastMonth, groupByApp } from "../src/earnings/model";
+import { groupByApp } from "../src/earnings/model";
 import type { RateTable } from "../src/money/rates";
 import { readFinancialReport } from "../src/reports/finance";
 import { readSalesReports } from "../src/reports/sales";
@@ -70,18 +70,3 @@ describe("groupByApp", () => {
   });
 });
 
-describe("forecastMonth", () => {
-  const days = (n: number, value: number) => Array.from({ length: n }, (_, i) => ({ date: `2026-11-${String(i + 1).padStart(2, "0")}`, total: value }));
-
-  test("so far + remaining days at the last 7 days' average", () => {
-    const daily = [...days(15, 10), ...days(22, 20).slice(15)]; // last 7 days at 20
-    const f = forecastMonth(daily, 28)!;
-    expect(f.remainingDays).toBe(6);
-    expect(f.perDay).toBe(20);
-    expect(f.total).toBe(15 * 10 + 7 * 20 + 6 * 20);
-  });
-  test("no forecast with fewer than 3 days, or when the month is complete", () => {
-    expect(forecastMonth(days(2, 10), 28)).toBeUndefined();
-    expect(forecastMonth(days(28, 10), 28)).toBeUndefined();
-  });
-});

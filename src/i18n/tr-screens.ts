@@ -9,19 +9,12 @@ export const TR_SCREENS: Record<string, string> = {
   "(App sales)": "(Uygulama satışları)",
   "No paid sales in this period.": "Bu dönemde ücretli satış yok.",
   "Payment": "Ödeme",
-  "from Reports": "Raporlardan",
-  "forecast from Trends": "Trendlerden tahmin",
-  "from Trends": "Trendlerden",
-  "Trends so far, month not complete": "şimdiye kadarki Trendler, ay tamamlanmadı",
   "nothing to pay for this month": "bu ay için ödeme yok",
   "paid around {date}": "{date} civarında ödendi",
   "expected around {date}": "{date} civarında bekleniyor",
   "Goal": "Hedef",
   "reached": "ulaşıldı",
   "{amount} over": "{amount} fazla",
-  "on track": "yolunda",
-  "forecast ~{amount}": "tahmin ~{amount}",
-  "forecast ~{forecast}, {short} short": "tahmin ~{forecast}, {short} eksik",
   "{amount} to go": "{amount} kaldı",
   "{current} of {goal}": "{current} / {goal}",
   "Apple Financial Report, the final figures.": "Apple Finansal Raporu, kesin rakamlar.",
@@ -41,9 +34,6 @@ export const TR_SCREENS: Record<string, string> = {
   "month still running": "ay sürüyor",
   "Daily": "Günlük",
   "peak {amount} on {date}": "en yüksek {amount}, {date}",
-  "Forecast": "Tahmin",
-  "~{amount} for the month": "ay toplamı ~{amount}",
-  "{days} days left × {perDay}, {basis}-day average": "kalan {days} gün × {perDay}, {basis} günlük ortalama",
   "Diff": "Fark",
   "Reports {diff} ({pct}) vs Trends": "Raporlar, Trendlere göre {diff} ({pct})",
   ", because the Financial Report has:": ", çünkü Finansal Raporda şunlar var:",
@@ -63,8 +53,6 @@ export const TR_SCREENS: Record<string, string> = {
   "Account": "Hesap",
   "could not be read": "okunamadı",
   "* not every account has a Financial Report for this month yet": "* bu ay için henüz her hesabın Finansal Raporu yok",
-  "Payment uses Reports when available, otherwise Trends (~). Expected around {date}.":
-    "Ödeme, varsa Raporlardan, yoksa Trendlerden (~) hesaplanır. Beklenen tarih: {date} civarı.",
 
   // One app
   "Product": "Ürün",
@@ -175,8 +163,6 @@ export const TR_SCREENS: Record<string, string> = {
   "error": "hata",
   "{n} months": "{n} ay",
   "average of closed months {amount}": "kapanan ayların ortalaması {amount}",
-  "* month still running: forecast.  ~ estimate from Trends (no Financial Report).":
-    "* ay sürüyor: tahmin.  ~ Trendlerden tahmin (Finansal Rapor yok).",
   "Top apps": "En çok kazandıran uygulamalar",
   // Apple's cancellation reasons
   Canceled: "İptal edildi",
@@ -185,4 +171,15 @@ export const TR_SCREENS: Record<string, string> = {
   "Product not available": "Ürün sunulmuyor",
   "Customer support": "Müşteri desteği",
   Other: "Diğer",
+  "Apple Financial Report": "Apple Finansal Raporu",
+  "not final yet": "henüz kesin değil",
+  "sales so far {amount}": "şu ana kadarki satış {amount}",
+  "sales of the month {amount}": "ayın satışı {amount}",
+  "the final amount comes with Apple's Financial Report": "kesin tutar Apple'ın Finansal Raporu ile gelir",
+  "waiting for Apple's Financial Report": "Apple'ın Finansal Raporu bekleniyor",
+  "Payment is Apple's Financial Report. Expected around {date}.": "Ödeme, Apple'ın Finansal Raporu'dur. Beklenen tarih: {date} civarı.",
+  "Payment: the final amount comes with Apple's Financial Report; Trends are the real sales so far. Expected around {date}.":
+    "Ödeme: kesin tutar Apple'ın Finansal Raporu ile gelir; Trendler şu ana kadarki gerçek satıştır. Beklenen tarih: {date} civarı.",
+  "* month still running: sales so far.  ~ no Financial Report yet: Trends, not the final payment.":
+    "* ay sürüyor: şu ana kadarki satış.  ~ Finansal Rapor henüz yok: Trendler, kesin ödeme değil.",
 };

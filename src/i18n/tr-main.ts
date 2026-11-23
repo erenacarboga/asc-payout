@@ -107,7 +107,7 @@ export const TR_MAIN: Record<string, string> = {
   // Watch
   "{account}: {month} already announced.": "{account}: {month} zaten bildirildi.",
   "{account}: {month} not published yet.": "{account}: {month} henüz yayınlanmadı.",
-  "{month} is final: {amount}, expected around {date}.": "{month} kesinleşti: {amount}, ödeme tahminen {date} civarında.",
+  "{month} is final: {amount}, expected around {date}.": "{month} kesinleşti: {amount}, ödeme {date} civarında.",
 
   // Update
   "asc-payout {version} is available: run  asc-payout update": "asc-payout {version} çıktı: güncellemek için  asc-payout update",

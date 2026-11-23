@@ -17,7 +17,7 @@ export interface AccountHistory {
 }
 
 /**
- * Several months, newest first: a running month with its forecast, closed months from
+ * Several months, newest first: a running month with its sales so far, closed months from
  * their Financial Report (Trends only where no report exists yet).
  */
 export async function computeHistory(account: Account, months: YearMonth[], opts: MonthOptions): Promise<AccountHistory> {
@@ -89,7 +89,7 @@ export function renderHistory(histories: AccountHistory[], currency: string, tit
   const avg = closed.length ? closed.reduce((a, b) => a + b, 0) / closed.length : 0;
   out.push("  " + "─".repeat(NAME + COL * heads.length + CHANGE + barWidth + 1));
   out.push(bold(`  ${t("{n} months", { n: months }).padEnd(NAME)}${m(sum).padStart(COL * heads.length)}`) + dim(`   ${t("average of closed months {amount}", { amount: m(avg) })}`));
-  out.push(dim(`  ${t("* month still running: forecast.  ~ estimate from Trends (no Financial Report).")}`));
+  out.push(dim(`  ${t("* month still running: sales so far.  ~ no Financial Report yet: Trends, not the final payment.")}`));
 
   // Biggest apps over the period
   const apps = new Map<string, number>();

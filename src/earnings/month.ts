@@ -8,7 +8,7 @@ import { readSettlement } from "../reports/detail";
 import { readFinancialReport } from "../reports/finance";
 import { readSalesReports, salesByCountry } from "../reports/sales";
 import { totalsByCurrency } from "../reports/tsv";
-import { describeSources, forecastMonth, groupByApp, type MonthResult } from "./model";
+import { describeSources, groupByApp, type MonthResult } from "./model";
 
 export interface MonthOptions {
   currency: string;
@@ -114,7 +114,7 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
   const reportsTotal = financial ? sum(financial.products.values(), (p) => convert(p.amounts, table)) : null;
   const trendsTotal = sum(trendsProducts.values(), (p) => convert(p.amounts, table));
 
-  // 5) Day by day, and a forecast while the month is running
+  // 5) Day by day
   const byDate = new Map(salesDays.map((d) => [d.date, d]));
   const daily = eachDay(period.start, period.end).map((date) => {
     const d = byDate.get(date);
@@ -122,10 +122,6 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
     return { date, total: d.text ? sum(readSalesReports([d.text]).values(), (p) => convert(p.amounts, table)) : 0 };
   });
   const complete = !skipTrends && available.length === days && failed.length === 0;
-  const forecast =
-    !complete && failed.length === 0 && period.end >= now
-      ? forecastMonth(daily.filter((d): d is { date: string; total: number } => d.total !== null), days)
-      : undefined;
 
   // 6) Countries
   const countryCodes = new Set([...Object.keys(financial?.countries ?? {}), ...Object.keys(trendsCountries)]);
@@ -158,9 +154,7 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
   const payment: MonthResult["payment"] =
     reportsTotal !== null
       ? { date: paymentDate, paid: now > paymentDate, amount: reportsTotal, basis: "reports" }
-      : forecast
-        ? { date: paymentDate, paid: false, amount: forecast.total, basis: "forecast" }
-        : { date: paymentDate, paid: now > paymentDate, amount: trendsTotal, basis: complete || skipTrends ? "trends" : "trends-so-far" };
+      : { date: paymentDate, paid: false, amount: trendsTotal, basis: complete || skipTrends || period.end < now ? "trends" : "trends-so-far" };
 
   const rateDates = [...table.rates.values()].map((r) => r.date).filter((d) => /^\d{4}-/.test(d)).sort();
 
@@ -177,13 +171,13 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
       through: available.map((d) => d.date).sort().at(-1),
       problems,
       total: trendsTotal,
-      forecast,
     },
     apps,
     daily,
     countries,
     settlement,
-    rates: { date: rateDates.at(-1) ?? period.end, sources: describeSources(table), unconverted },
+    // a day that has happened: nothing converted in a running month means no rate date in the future
+    rates: { date: rateDates.at(-1) ?? (period.end < now ? period.end : now), sources: describeSources(table), unconverted },
     payment,
   };
 }

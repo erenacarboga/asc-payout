@@ -42,7 +42,6 @@ export interface MonthResult {
     through?: string;
     problems: string[];
     total: number;
-    forecast?: { total: number; perDay: number; remainingDays: number; basisDays: number };
   };
   apps: AppGroup[];
   /** Trends per day of the period; null = not available (yet) */
@@ -64,7 +63,12 @@ export interface MonthResult {
     date: string;
     paid: boolean;
     amount: number;
-    basis: "reports" | "forecast" | "trends" | "trends-so-far";
+    /**
+     * reports: Apple's Financial Report, final. trends: the month is complete but its Financial
+     * Report isn't out yet (Trends total). trends-so-far: the month is running (Trends so far).
+     * Only real sales: nothing is projected.
+     */
+    basis: "reports" | "trends" | "trends-so-far";
   };
 }
 
@@ -117,19 +121,6 @@ export function groupByApp(
   return result.sort((a, b) => size(b) - size(a));
 }
 
-/**
- * Full-month estimate for a month in progress: total so far plus the remaining days at
- * the average of the last `window` days with data. Needs at least 3 days.
- */
-export function forecastMonth(dailyTotals: { date: string; total: number }[], days: number, window = 7) {
-  if (dailyTotals.length < 3 || dailyTotals.length >= days) return undefined;
-  const sorted = [...dailyTotals].sort((a, b) => a.date.localeCompare(b.date));
-  const recent = sorted.slice(-window);
-  const perDay = recent.reduce((s, d) => s + d.total, 0) / recent.length;
-  const soFar = sorted.reduce((s, d) => s + d.total, 0);
-  const remainingDays = days - sorted.length;
-  return { total: soFar + perDay * remainingDays, perDay, remainingDays, basisDays: recent.length };
-}
 
 /** "ECB; exchange-api for KZT, TWD" */
 export function describeSources(table: RateTable): string {

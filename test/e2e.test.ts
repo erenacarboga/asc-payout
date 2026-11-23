@@ -181,20 +181,29 @@ describe("Reports not available", () => {
     expect(computeMonth(account, OCT, opts)).rejects.toThrow(/Nothing could be read/);
   });
 
-  test("a month in progress gets a forecast", async () => {
+  test("a month in progress shows its real sales so far, never a projection", async () => {
     const ym = recentMonths(1)[0];
     const p = fiscalPeriod(ym);
     const yesterday = addDays(today(), -1);
-    if (yesterday < addDays(p.start, 2)) return; // too early in the month for a forecast
+    if (yesterday < addDays(p.start, 2)) return; // too early in the month
     const sales: FakeWorld["sales"] = {};
     for (const d of eachDay(p.start, yesterday)) sales[d] = salesDayB.replaceAll("10/05/2026", "x"); // 1.40 USD a day
     sales[today()] = "not-yet";
     serve(world({ sales, apps: [{ id: "900002", sku: "app.paint", name: "Paint" }] }));
     const r = await computeMonth(account, ym, opts);
     expect(r.reports.status).toBe("in-progress");
-    expect(r.trends.forecast!.perDay).toBeCloseTo(1.4, 6);
-    expect(r.payment.basis).toBe("forecast");
-    expect(r.payment.amount).toBeCloseTo(1.4 * eachDay(p.start, p.end).length, 6);
+    const soFar = 1.4 * eachDay(p.start, yesterday).length;
+    expect(r.trends.total).toBeCloseTo(soFar, 6);
+    expect(r.payment.basis).toBe("trends-so-far");
+    expect(r.payment.amount).toBeCloseTo(soFar, 6);
+    expect(r.payment.paid).toBe(false);
+    expect("forecast" in r.trends).toBe(false);
+
+    const { renderMonth } = await import("../src/earnings/render");
+    const text = renderMonth(r);
+    expect(text).toContain("Payment   not final yet  ·  sales so far");
+    expect(text).toContain("the final amount comes with Apple's Financial Report");
+    expect(text).not.toMatch(/forecast|average|~\$/i);
   });
 });
 
@@ -204,7 +213,7 @@ describe("command line", () => {
     expect(await run(["-a", "notes", "-m", "2026-10"])).toBe(0);
     const text = output.join("\n");
     expect(text).toContain("Notes Inc  ·  October 2026");
-    expect(text).toContain("Payment   ~$40.64");
+    expect(text).toContain("Payment   $40.64");
     expect(text).toMatch(/Big Tip\s+\$0\.00\s+\$0\.00\*/);
     expect(text).toContain("No exchange rate for 4,389.22 KZT; not included in the Trends total (rows marked *).");
   });

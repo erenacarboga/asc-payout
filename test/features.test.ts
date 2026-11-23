@@ -253,11 +253,10 @@ describe("monthly goals", () => {
     expect(parseAmount("")).toBeNull();
   });
 
-  test("progress line: reached, on track, short, to go", async () => {
+  test("progress line: reached, or how much is left (no projection)", async () => {
     const { goalLine } = await import("../src/earnings/render");
     expect(goalLine(1200, 1000, "USD")).toContain("120%  $1,200.00 of $1,000.00  ·  reached, $200.00 over");
-    expect(goalLine(500, 1000, "USD", 1100)).toContain("50%  $500.00 of $1,000.00  ·  on track (forecast ~$1,100.00)");
-    expect(goalLine(500, 1000, "USD", 900)).toContain("forecast ~$900.00, $100.00 short");
+    expect(goalLine(500, 1000, "USD")).toContain("50%  $500.00 of $1,000.00  ·  $500.00 to go");
     expect(goalLine(250, 1000, "USD")).toContain("25%  $250.00 of $1,000.00  ·  $750.00 to go");
     expect(goalLine(250, 1000, "USD")).toContain("████░░░░░░░░░░░░");
   });

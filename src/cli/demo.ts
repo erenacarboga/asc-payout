@@ -1,6 +1,6 @@
 import { t } from "../i18n";
 import { addDays, eachDay, fiscalPeriod, toMs, today, type YearMonth } from "../calendar/fiscal";
-import { forecastMonth, type AppGroup, type MonthResult } from "../earnings/model";
+import type { AppGroup, MonthResult } from "../earnings/model";
 
 /**
  * Made-up results in the real layout: for screenshots and for trying the tool
@@ -57,9 +57,6 @@ export function demoResults(ym: YearMonth, currency: string): MonthResult[] {
     const trendsTotal = fullTrends * share;
     const reportsTotal = running ? null : apps.reduce((s, a) => s + a.reports, 0);
     const daily = all.map((date, i) => ({ date, total: i < available ? fullTrends * shape[i] : null }));
-    const forecast = running
-      ? forecastMonth(daily.filter((d): d is { date: string; total: number } => d.total !== null), all.length)
-      : undefined;
     const date = addDays(period.end, 33);
     const countries = COUNTRY_SHARE.map(([code, part]) => ({ code, reports: (reportsTotal ?? 0) * part, trends: trendsTotal * part }));
     const earlier = reportsTotal === null ? 0 : reportsTotal * 0.09;
@@ -69,7 +66,7 @@ export function demoResults(ym: YearMonth, currency: string): MonthResult[] {
       period,
       currency,
       reports: { status: running ? "in-progress" : "ok", mismatches: [], total: reportsTotal },
-      trends: { days: all.length, available, through: available > 0 ? all[available - 1] : undefined, problems: [], total: trendsTotal, forecast },
+      trends: { days: all.length, available, through: available > 0 ? all[available - 1] : undefined, problems: [], total: trendsTotal },
       apps,
       daily,
       countries,
@@ -78,7 +75,7 @@ export function demoResults(ym: YearMonth, currency: string): MonthResult[] {
       payment:
         reportsTotal !== null
           ? { date, paid: now > date, amount: reportsTotal, basis: "reports" }
-          : { date, paid: false, amount: forecast?.total ?? trendsTotal, basis: forecast ? "forecast" : "trends-so-far" },
+          : { date, paid: false, amount: trendsTotal, basis: running ? "trends-so-far" : "trends" },
     } satisfies MonthResult;
   });
 }

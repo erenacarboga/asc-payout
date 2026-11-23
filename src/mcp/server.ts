@@ -20,8 +20,8 @@ const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const INSTRUCTIONS = `asc-payout answers App Store earnings questions from the user's own App Store Connect data.
 - Months are Apple fiscal months named after the calendar month they mostly cover: "2026-10" is October 2026 = Sep 27 - Oct 31, 2026. Always state the period.
 - reports.total is Apple's Financial Report: final, the basis of the payment; null until Apple publishes it (a few days after the month ends).
-- trends.total adds up daily Sales reports: available during the month, with a forecast; differs from Reports by a few percent. Never add Reports and Trends.
-- payment.amount is what Apple pays for the month: final when payment.basis is "reports", otherwise an estimate (say "about"). payment.date is the expected payment day.
+- trends.total adds up the daily Sales reports: the real sales so far while the month runs; differs from Reports by a few percent. Never add Reports and Trends.
+- payment.amount is final only when payment.basis is "reports" (Apple's Financial Report). Otherwise it is the real sales so far ("trends-so-far", month running) or of the whole month ("trends", report not out yet): say it is not final. Never project or estimate the rest of the month. payment.date is the expected payment day.
 - Amounts are proceeds after Apple's commission, before tax withholding and bank fees, converted at month-end rates into "currency".
 - With several accounts, each has its own entry; the combined payment is the sum of payment.amount.
 - Mention anything in "errors", trends.problems or rates.unconverted.
@@ -61,7 +61,7 @@ export const TOOLS: Tool[] = [
     name: "get_month",
     title: "Earnings of a month",
     description:
-      "What Apple pays for one fiscal month, per account: the payment (amount, expected date, final or estimate), the Financial Report total, Sales Trends with a forecast while the month runs, every app and product, countries, day-by-day sales, and why Reports and Trends differ. Use for 'how much will Apple pay me', 'what did I earn in October', 'which app earned most', 'this month so far'.",
+      "What Apple pays for one fiscal month, per account: the payment (final from the Financial Report, or the real sales so far until it is out), the Financial Report total, Sales Trends, every app and product, countries, day-by-day sales, and why Reports and Trends differ. Use for 'how much will Apple pay me', 'what did I earn in October', 'which app earned most', 'this month so far'.",
     inputSchema: { type: "object", properties: { account, month, currency }, additionalProperties: false },
     argv: (a) => [...(a.month ? ["-m", String(a.month)] : []), ...common(a)],
   },

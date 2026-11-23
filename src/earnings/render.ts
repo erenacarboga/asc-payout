@@ -53,11 +53,8 @@ export interface RenderOptions {
   goal?: number;
 }
 
-/**
- * Progress toward a monthly goal. `current` is what is known now; `forecast` the
- * expected month total while the month is running.
- */
-export function goalLine(current: number, goal: number, currency: string, forecast?: number): string {
+/** Progress toward a monthly goal, from what is known now (no projection). */
+export function goalLine(current: number, goal: number, currency: string): string {
   const m = (n: number) => money(n, currency);
   const share = goal > 0 ? current / goal : 0;
   const cells = 16;
@@ -65,18 +62,13 @@ export function goalLine(current: number, goal: number, currency: string, foreca
   const bar = (share >= 1 ? green : (s: string) => s)("█".repeat(filled)) + dim("░".repeat(cells - filled));
   let tail: string;
   if (share >= 1) tail = green(t("reached")) + dim(current > goal ? `, ${t("{amount} over", { amount: m(current - goal) })}` : "");
-  else if (forecast !== undefined) {
-    tail =
-      forecast >= goal
-        ? green(t("on track")) + dim(` (${t("forecast ~{amount}", { amount: m(forecast) })})`)
-        : yellow(t("forecast ~{forecast}, {short} short", { forecast: m(forecast), short: m(goal - forecast) }));
-  } else tail = dim(t("{amount} to go", { amount: m(goal - current) }));
+  else tail = dim(t("{amount} to go", { amount: m(goal - current) }));
   return `${label("Goal")}${bar} ${String(Math.round(share * 100)).padStart(3)}%  ${t("{current} of {goal}", { current: m(current), goal: m(goal) })}  ·  ${tail}`;
 }
 
-/** What counts toward a goal: the payment, or Trends so far while a forecast stands in for it. */
-export function goalProgress(r: MonthResult): { current: number; forecast?: number } {
-  return r.payment.basis === "forecast" ? { current: r.trends.total, forecast: r.payment.amount } : { current: r.payment.amount };
+/** What counts toward a goal: the Financial Report when it is out, the real sales so far (Trends) until then. */
+export function goalProgress(r: MonthResult): number {
+  return r.payment.amount;
 }
 
 export function renderMonth(r: MonthResult, options: RenderOptions = {}): string {
@@ -113,23 +105,20 @@ export function renderMonth(r: MonthResult, options: RenderOptions = {}): string
   out.push("");
 
   // Payment first: it is what people run this for
+  // Only real figures: the Financial Report when it is out, otherwise the sales so far
   const p = r.payment;
-  const basis = {
-    reports: t("from Reports"),
-    forecast: t("forecast from Trends"),
-    trends: t("from Trends"),
-    "trends-so-far": t("Trends so far, month not complete"),
-  }[p.basis];
-  if (Math.abs(p.amount) < 0.005 && (p.basis === "reports" || p.basis === "trends")) {
-    out.push(bold(`${label("Payment")}${m(0)}`) + dim(`  ·  ${t("nothing to pay for this month")}`));
+  const when = t(p.paid ? "paid around {date}" : "expected around {date}", { date: shortDate(p.date) });
+  if (p.basis === "reports") {
+    if (Math.abs(p.amount) < 0.005) out.push(bold(`${label("Payment")}${m(0)}`) + dim(`  ·  ${t("nothing to pay for this month")}`));
+    else out.push(bold(`${label("Payment")}${m(p.amount)}  ·  ${when}`) + dim(`  (${t("Apple Financial Report")})`));
+  } else if (p.basis === "trends-so-far") {
+    out.push(bold(`${label("Payment")}${t("not final yet")}`) + `  ·  ${t("sales so far {amount}", { amount: m(p.amount) })}`);
+    out.push(dim(MORE + `${t("{n} of {total} days", { n: r.trends.available, total: r.trends.days })}; ${t("the final amount comes with Apple's Financial Report")}`));
   } else {
-    const when = t(p.paid ? "paid around {date}" : "expected around {date}", { date: shortDate(p.date) });
-    out.push(bold(`${label("Payment")}~${m(p.amount)}  ·  ${when}`) + dim(`  (${basis})`));
+    out.push(bold(`${label("Payment")}${t("not final yet")}`) + `  ·  ${t("sales of the month {amount}", { amount: m(p.amount) })}`);
+    out.push(dim(MORE + `${t("waiting for Apple's Financial Report")}; ${when}`));
   }
-  if (options.goal) {
-    const g = goalProgress(r);
-    out.push(goalLine(g.current, options.goal, r.currency, g.forecast));
-  }
+  if (options.goal) out.push(goalLine(goalProgress(r), options.goal, r.currency));
 
   // Reports
   const reportsLine = {
@@ -166,13 +155,6 @@ export function renderMonth(r: MonthResult, options: RenderOptions = {}): string
     }
   }
   for (const problem of tr.problems) out.push(yellow(MORE + problem));
-  if (tr.forecast) {
-    const f = tr.forecast;
-    out.push(
-      `${label("Forecast")}${t("~{amount} for the month", { amount: m(f.total) })}` +
-        dim(`  (${t("{days} days left × {perDay}, {basis}-day average", { days: f.remainingDays, perDay: m(f.perDay), basis: f.basisDays })})`),
-    );
-  }
   if (hasReports && tr.total !== 0 && !tr.skipped) {
     const diff = r.reports.total! - tr.total;
     const pct = (diff / Math.abs(tr.total)) * 100;
@@ -222,9 +204,7 @@ export function renderSummary(rows: AccountRow[], currency: string, goal?: numbe
 
   let reports = 0;
   let trends = 0;
-  let payment = 0;
   let reportsCount = 0;
-  let estimated = false;
   for (const row of rows) {
     if (!row.result) {
       out.push(`  ${fit(row.name, W - 1)} ${yellow(t("could not be read").padStart(A * 3))}`);
@@ -233,36 +213,30 @@ export function renderSummary(rows: AccountRow[], currency: string, goal?: numbe
     const r = row.result;
     const rep = r.reports.total === null ? null : cents(r.reports.total);
     const tr = cents(r.trends.total);
-    const pay = cents(r.payment.amount);
     if (rep !== null) {
       reports += rep;
       reportsCount++;
     }
-    if (r.payment.basis !== "reports") estimated = true;
     trends += tr;
-    payment += pay;
-    out.push(
-      `  ${fit(row.name, W - 1)} ${(rep === null ? "—" : m(rep)).padStart(A)}${m(tr).padStart(A)}${((r.payment.basis === "reports" ? "" : "~") + m(pay)).padStart(A)}`,
-    );
+    // the payment is the Financial Report; until it is out there is no final amount
+    out.push(`  ${fit(row.name, W - 1)} ${(rep === null ? "—" : m(rep)).padStart(A)}${m(tr).padStart(A)}${(rep === null ? "—" : m(rep)).padStart(A)}`);
   }
   out.push(rule);
   const reportsTotal = reportsCount === 0 ? "—" : m(reports) + (reportsCount < rows.length ? "*" : "");
-  out.push(bold(`  ${t("Total").padEnd(W)}${reportsTotal.padStart(A)}${m(trends).padStart(A)}${((estimated ? "~" : "") + m(payment)).padStart(A)}`));
+  out.push(bold(`  ${t("Total").padEnd(W)}${reportsTotal.padStart(A)}${m(trends).padStart(A)}${reportsTotal.padStart(A)}`));
   out.push("");
   const results = rows.flatMap((r) => (r.result ? [r.result] : []));
   if (goal && results.length > 0) {
-    const parts = results.map(goalProgress);
-    const running = parts.some((p) => p.forecast !== undefined);
-    const current = parts.reduce((s, p) => s + cents(p.current), 0);
-    const forecast = running ? parts.reduce((s, p) => s + cents(p.forecast ?? p.current), 0) : undefined;
-    out.push(goalLine(current, goal, currency, forecast));
+    out.push(goalLine(results.reduce((s, r) => s + cents(goalProgress(r)), 0), goal, currency));
     out.push("");
   }
   if (reportsCount > 0 && reportsCount < rows.length) out.push(dim(`  ${t("* not every account has a Financial Report for this month yet")}`));
   if (first) {
-    out.push(
-      dim(`  ${t("Payment uses Reports when available, otherwise Trends (~). Expected around {date}.", { date: shortDate(first.payment.date) })}`),
-    );
+    const note =
+      reportsCount === rows.length
+        ? t("Payment is Apple's Financial Report. Expected around {date}.", { date: shortDate(first.payment.date) })
+        : t("Payment: the final amount comes with Apple's Financial Report; Trends are the real sales so far. Expected around {date}.", { date: shortDate(first.payment.date) });
+    out.push(dim(`  ${note}`));
   }
   out.push("");
   return out.join("\n");

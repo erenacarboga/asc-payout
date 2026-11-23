@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.0
+
+- **Only real figures, no projections.** The month-end forecast (sales so far plus the remaining days at a recent daily average) is gone everywhere: the month screen, the summary, history, monthly goals, `--json` (`trends.forecast` and the `forecast` payment basis are removed), the MCP tools and the demo.
+- While a month is running, the payment line says "not final yet" with the real sales so far and how many days they cover. Once Apple publishes the Financial Report, the payment is that report's figure.
+- The summary's Payment column shows Financial Report figures only; before that it is empty, with the Trends column showing the real sales so far.
+- Monthly goals show progress from real sales (reached, or how much is left), without "on track" guesses.
+- A running month with nothing to convert no longer shows an exchange-rate date in the future.
+
 ## 1.7.3
 
 - Updating is a live panel: the versions, each step with its state (found, downloading, checked with SHA-256, installed), a smooth progress bar with the percentage, megabytes, speed with a small speed graph, and time left. It ends with a short finish line: the new version, size, time, and that the checksum was verified.

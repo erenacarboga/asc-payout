@@ -7,7 +7,7 @@
 **What will Apple pay me for this month?** `asc-payout` answers from your own App Store Connect data, per Apple fiscal month, with two sources side by side:
 
 - **Reports**: Apple's Financial Report. Final, and what the payment is based on. Published a few days after the month closes.
-- **Trends**: the daily Sales reports of every day in the month, added up. Available while the month is running, with a forecast for the whole month.
+- **Trends**: the daily Sales reports of every day in the month, added up. Available while the month is running: the real sales so far.
 
 One or many developer accounts, every currency converted at the month-end rate. Also: details per app, refunds and cancellations, profit after Apple Ads, monthly goals. In English or Turkish.
 
@@ -27,7 +27,7 @@ One or many developer accounts, every currency converted at the month-end rate. 
   ────────────────────────────────────────────────────────────────────
   Total                                         $1,171.69    $1,144.12
 
-  Payment   ~$1,171.69  ·  expected around Dec 3, 2026  (from Reports)
+  Payment   $1,171.69  ·  expected around Dec 3, 2026  (Apple Financial Report)
   Goal      ████████████████ 107%  $1,171.69 of $1,100.00  ·  reached, $71.69 over
   Reports   Apple Financial Report, the final figures.
             Rows match the report's own country summary.
@@ -83,7 +83,7 @@ One key is enough: app names come from your app list, and in-app purchases are m
 Type `asc-payout`. A menu opens; everything the tool can do is in it, no options to learn:
 
 ```
-  asc-payout 1.7.3   All accounts  ·  USD
+  asc-payout 1.8.0   All accounts  ·  USD
 
 ? What would you like to see?
   t This month so far           November 2026  ·  Nov 1 - Nov 28, 2026  ·  running
@@ -139,10 +139,10 @@ Trials started and how many became paid in the same days, cancellations (turning
 
 ### Monthly goals
 
-Settings > Monthly goals: a goal per account, and one for all accounts together, in the currency you choose. The month screen shows how far along you are, and while the month is running, whether the forecast reaches it:
+Settings > Monthly goals: a goal per account, and one for all accounts together, in the currency you choose. The month screen shows how far along you are, from the real sales so far:
 
 ```
-  Goal      ██████████████░░  85%  $851.12 of $1,000.00  ·  on track (forecast ~$1,142.90)
+  Goal      ██████████████░░  85%  $851.12 of $1,000.00  ·  $148.88 to go
 ```
 
 ### Profit after Apple Ads
@@ -242,7 +242,7 @@ The extension starts the installed `asc-payout` with `asc-payout mcp`. If it can
 
 ### The Agent Skill
 
-For coding assistants that run commands, the repository also ships an [Agent Skill](skills/asc-payout/SKILL.md) that teaches them to answer the same questions by running `asc-payout` with `--json` and reading the result correctly (fiscal months, Reports vs Trends, estimates vs final figures). It never reads or prints your keys.
+For coding assistants that run commands, the repository also ships an [Agent Skill](skills/asc-payout/SKILL.md) that teaches them to answer the same questions by running `asc-payout` with `--json` and reading the result correctly (fiscal months, Reports vs Trends, sales so far vs the final payment). It never reads or prints your keys.
 
 **Claude Code**, as a plugin:
 
@@ -284,7 +284,7 @@ Then ask in plain words. Account setup stays with you: run `asc-payout setup` on
 - **Trends** add up `Units × Developer Proceeds` per `Currency of Proceeds` from one daily report per day; refunds have negative units. Days Apple has not published yet are told apart from days without sales, and failures are listed instead of counted as zero.
 - **Why Reports and Trends differ, exactly.** The Financial Detail Report has the day of every transaction. asc-payout splits the difference into sales made before the month that Apple settled in this report, and this month's sales that Apple settles in the next one; the two add up to the difference to the cent. (Shown only when the detail report adds up exactly to the Financial Report.)
 - **Daily** shows one bar per day of the month (Trends), a space between weeks, `·` for days Apple hasn't published yet.
-- **Forecast**, for a running month: sales so far plus the remaining days at the last 7 days' average.
+- **Only real figures, no projections.** While a month is running, asc-payout shows the sales so far (Trends, day by day as Apple publishes them) and says the payment is not final yet. The payment amount is Apple's Financial Report, shown once Apple publishes it. Nothing is extrapolated from averages.
 - **Exchange rates** are the same for both columns, taken on the last day of the month: ECB reference rates ([Frankfurter](https://frankfurter.dev)), then [exchange-api](https://github.com/fawazahmed0/exchange-api) and [open.er-api.com](https://www.exchangerate-api.com) for currencies the ECB doesn't cover. An amount without any rate is listed separately, never counted 1:1.
 - **Reports and Trends differ** by a few percent in a normal month: sales near the month edge can fall into the neighbouring Financial Report, refunds can be dated differently, and adjustments only appear in Reports. For an account that only sold on a few days, the gap can be large.
 - **Nothing half-done is used.** Downloads are written to the cache in one step, and every stored report is checked before it is read again (its own row count or totals). A damaged file is thrown away and downloaded again.

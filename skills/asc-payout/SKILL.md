@@ -50,7 +50,7 @@ Rules for every call:
 |---|---|
 | Last month's payment (the month that just closed) | `asc-payout -a all --json` |
 | A given month | `asc-payout -a all -m 2026-10 --json` |
-| This month so far, with a forecast | `asc-payout -a all -m <current YYYY-MM> --json` |
+| This month so far | `asc-payout -a all -m <current YYYY-MM> --json` |
 | By country | add `--by country` (countries are in `results[].countries` either way) |
 | In another currency | add `-c EUR` (any ISO code) |
 | The last N months / a year | `asc-payout history -a all --months 12 --json`, `asc-payout history -a all --year 2026 --json` |
@@ -69,8 +69,8 @@ Apple's fiscal calendar and the two sources are the most common source of wrong 
 
 - **Fiscal months, not calendar months.** `2026-10` means *October 2026* in Apple's fiscal calendar: Sep 27 - Oct 31, 2026 (`results[].period`). Fiscal years end on the last Saturday of September; quarters are 5 + 4 + 4 weeks. Always state the period when you give a number.
 - **Reports** (`reports.total`) is Apple's Financial Report: final, and what the payment is based on. It appears a few days after the month closes; before that `reports.status` is `in-progress` or `not-published` and `total` is `null`.
-- **Trends** (`trends.total`) adds up the daily Sales reports. Available during the month, with `trends.forecast` for the full month. It differs from Reports by a few percent in a normal month (timing at month edges, refunds, adjustments); `settlement` explains the difference exactly when available. Never add Reports and Trends together.
-- **Payment** (`payment.amount`) is the answer to "how much will I get": from Reports when published (`basis: "reports"`), otherwise a forecast or Trends (an estimate: say "about"). `payment.date` is the expected payment day (about 33 days after the month ends); `paid: true` when that day has passed.
+- **Trends** (`trends.total`) adds up the daily Sales reports: the real sales so far while the month runs. It differs from Reports by a few percent in a normal month (timing at month edges, refunds, adjustments); `settlement` explains the difference exactly when available. Never add Reports and Trends together.
+- **Payment** (`payment.amount`) is final only when `payment.basis` is `"reports"` (Apple's Financial Report). Before that it is the real sales so far (`trends-so-far`, month running) or of the whole month (`trends`, report not out yet): say it is not final yet. Never project the rest of the month from averages. `payment.date` is the expected payment day (about 33 days after the month ends); `paid: true` when that day has passed.
 - Amounts are **proceeds after Apple's commission**, before tax withholding and bank fees, converted at the month-end exchange rate into `currency`. Apple's own rates differ slightly, so the bank amount will not match to the cent.
 - Several accounts: each has its own entry in `results`; the combined figure is the sum of `payment.amount` across them (same currency).
 - `rates.unconverted` lists amounts with no exchange rate; they are not in the totals. Mention them.
@@ -79,7 +79,7 @@ Apple's fiscal calendar and the two sources are the most common source of wrong 
 
 ## 5. Answer the user
 
-- Lead with the number they asked for, its currency, the fiscal period, and whether it is final (Reports) or an estimate (Trends / forecast).
+- Lead with the number they asked for, its currency, the fiscal period, and whether it is final (Reports) or the sales so far (Trends).
 - Then the few lines that matter: biggest apps (`apps`, already sorted by size), the expected payment date, anything in `errors`, `reports.mismatches`, `trends.problems` or `rates.unconverted`.
 - Keep the user's account names as they appear; don't invent labels.
 - When numbers look surprising (a large Reports vs Trends gap, a month with nothing), check `reports.status`, `trends.available` vs `trends.days` and `trends.problems` before drawing conclusions, and suggest `asc-payout doctor` for access problems.
