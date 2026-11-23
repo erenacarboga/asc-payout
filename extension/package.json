@@ -1,6 +1,6 @@
 {
   "name": "asc-payout-extension",
-  "version": "1.8.4",
+  "version": "1.8.5",
   "private": true,
   "description": "Claude Desktop extension: starts the installed asc-payout with `asc-payout mcp`.",
   "license": "MIT",

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.5
+
+- A new icon for the Claude Desktop extension.
+- The developer is named Eren Arda Carboga in the extension, the Claude Code plugin and the license.
+
 ## 1.8.4
 
 - The Claude Desktop extension and the MCP server are called "ASC Payout: App Store Earnings".

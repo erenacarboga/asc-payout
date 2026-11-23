@@ -83,7 +83,7 @@ One key is enough: app names come from your app list, and in-app purchases are m
 Type `asc-payout` (or `ascp`). A menu opens; everything the tool can do is in it, no options to learn:
 
 ```
-  asc-payout 1.8.4   All accounts  ·  USD
+  asc-payout 1.8.5   All accounts  ·  USD
 
 ? What would you like to see?
   t This month so far           November 2026  ·  Nov 1 - Nov 28, 2026  ·  running
