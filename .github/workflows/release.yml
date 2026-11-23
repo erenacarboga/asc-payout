@@ -38,6 +38,11 @@ jobs:
           bun scripts/package-manifests.ts "$GITHUB_REF_NAME" release
           ruby -c release/asc-payout.rb
 
+      - name: Claude Desktop extension
+        run: |
+          npx -y @anthropic-ai/mcpb@2.1.2 validate extension/manifest.json
+          npx -y @anthropic-ai/mcpb@2.1.2 pack extension release/asc-payout.mcpb
+
       - uses: softprops/action-gh-release@v3
         with:
           files: release/*

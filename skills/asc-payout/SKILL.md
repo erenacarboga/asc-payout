@@ -7,7 +7,7 @@ description: Answers questions about App Store earnings with the asc-payout CLI,
 
 `asc-payout` reads the user's App Store Connect reports with their own API key and answers "what will Apple pay me for this month?", per Apple fiscal month, plus subscriptions, refunds and cancellations, and profit after Apple Ads. It runs locally; nothing is sent anywhere except to Apple and to exchange-rate services (currency codes and dates only).
 
-Run it yourself and read its JSON. Never guess numbers, and never compute payouts by hand from Apple's raw reports when the tool can answer.
+If the asc-payout MCP tools are available (`get_month`, `get_history`, `get_subscriptions`, `get_refunds_and_cancellations`, `get_profit`, `list_accounts`), use them: they return the same JSON as the commands below. Otherwise run the CLI yourself and read its JSON. Never guess numbers, and never compute payouts by hand from Apple's raw reports when the tool can answer.
 
 ## 1. Make sure it is installed
 

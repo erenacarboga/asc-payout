@@ -338,3 +338,33 @@ describe("profit after Apple Ads", () => {
     expect(run(["profit"])).rejects.toThrow("Apple Ads is not connected");
   });
 });
+
+describe("MCP server", () => {
+  test("handshake, tools, and a month answered with the same JSON as --json", async () => {
+    const { handle } = await import("../src/mcp/server");
+    serve(october());
+    const init = (await handle({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-03-26" } }, run)) as any;
+    expect(init.result.protocolVersion).toBe("2025-03-26");
+    expect(init.result.capabilities.tools).toBeDefined();
+    expect(await handle({ jsonrpc: "2.0", method: "notifications/initialized" }, run)).toBeNull();
+
+    const list = (await handle({ jsonrpc: "2.0", id: 2, method: "tools/list" }, run)) as any;
+    expect(list.result.tools.map((t: { name: string }) => t.name)).toContain("get_month");
+
+    const call = (await handle({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "get_month", arguments: { month: "2026-10" } } }, run)) as any;
+    expect(call.result.isError).toBeUndefined();
+    const data = JSON.parse(call.result.content[0].text);
+    expect(data.results[0].reports.total).toBeCloseTo(12.72 + 7.2 * 1.1 + 20, 6);
+    expect(output).toEqual([]); // nothing went to the real output
+
+    const accounts = (await handle({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "list_accounts", arguments: {} } }, run)) as any;
+    expect(JSON.parse(accounts.result.content[0].text).accounts).toEqual([{ name: "Notes Inc", vendor: "80000001" }]);
+
+    const bad = (await handle({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "get_month", arguments: { account: "nobody" } } }, run)) as any;
+    expect(bad.result.isError).toBe(true);
+    expect(bad.result.content[0].text).toContain('No account "nobody"');
+
+    const unknown = (await handle({ jsonrpc: "2.0", id: 6, method: "resources/list" }, run)) as any;
+    expect(unknown.error.code).toBe(-32601);
+  });
+});

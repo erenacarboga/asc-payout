@@ -83,7 +83,7 @@ One key is enough: app names come from your app list, and in-app purchases are m
 Type `asc-payout`. A menu opens; everything the tool can do is in it, no options to learn:
 
 ```
-  asc-payout 1.6.1   All accounts  ·  USD
+  asc-payout 1.7.0   All accounts  ·  USD
 
 ? What would you like to see?
   t This month so far           November 2026  ·  Nov 1 - Nov 28, 2026  ·  running
@@ -211,6 +211,7 @@ Picked from the menus, the month stays on screen: **← →** go to the previous
 | `churn [--days N]` | per app: trials, trials that became paid, cancellations, refunds; weekly conversion; cancellation reasons; billing problems recovered or lost |
 | `profit [-m YYYY-MM]` | revenue next to Apple Ads spend by app: profit, ROAS, installs, cost per install (needs Apple Ads in Settings) |
 | `watch` | when last month's Financial Report is out: a desktop notification and a line of output, once |
+| `mcp` | serve the same data to AI assistants over the Model Context Protocol (stdio) |
 | `--csv` | CSV instead of the table (month, history, subs, churn, profit) |
 | `--no-clear` | keep the screen; by default it is cleared first (also `ASC_PAYOUT_NO_CLEAR=1`) |
 | `setup`, `status`, `demo` | manage accounts, show where files are, try with made-up data |
@@ -221,7 +222,27 @@ For scripts and CI, an account can come from environment variables instead of se
 
 ## Use it from an AI assistant
 
-The repository ships an [Agent Skill](skills/asc-payout/SKILL.md) that teaches coding assistants to answer questions like *"what will Apple pay me for October?"*, *"which app had the most refunds this month?"* or *"is Apple Ads paying off?"* by running `asc-payout` with `--json` and reading the result correctly (fiscal months, Reports vs Trends, estimates vs final figures). It never reads or prints your keys.
+Ask in plain words, in any language: *"what will Apple pay me for October?"*, *"which app had the most refunds this month?"*, *"is Apple Ads paying off?"*. Two ways, both running on your computer with the accounts you set up (`asc-payout setup`); your keys never leave it, only the results reach the conversation.
+
+### Claude Desktop: the extension
+
+1. Install asc-payout and run `asc-payout setup` once (see [Install](#install)).
+2. Download [asc-payout.mcpb](https://github.com/erenacarboga/asc-payout/releases/latest/download/asc-payout.mcpb) and open it: Claude Desktop asks to install the extension. (Or Settings > Extensions > Install Extension.)
+3. Ask in any chat. Claude uses the extension's tools: accounts, a month, history, subscriptions, refunds and cancellations, profit after Apple Ads.
+
+The extension starts the installed `asc-payout` with `asc-payout mcp`. If it can't find it, Claude tells you how to install it; if it lives somewhere unusual, set its path in the extension's settings.
+
+### Any MCP client: `asc-payout mcp`
+
+`asc-payout mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio with the same tools. No server to host: the assistant starts it on your computer when it needs it.
+
+- **Claude Code:** `claude mcp add asc-payout -- asc-payout mcp`
+- **VS Code:** in `.vscode/mcp.json` (or your user MCP settings): `{ "servers": { "asc-payout": { "type": "stdio", "command": "asc-payout", "args": ["mcp"] } } }`
+- **Cursor** and others: `{ "mcpServers": { "asc-payout": { "command": "asc-payout", "args": ["mcp"] } } }`
+
+### The Agent Skill
+
+For coding assistants that run commands, the repository also ships an [Agent Skill](skills/asc-payout/SKILL.md) that teaches them to answer the same questions by running `asc-payout` with `--json` and reading the result correctly (fiscal months, Reports vs Trends, estimates vs final figures). It never reads or prints your keys.
 
 **Claude Code**, as a plugin:
 
@@ -285,7 +306,7 @@ Then ask in plain words. Account setup stays with you: run `asc-payout setup` on
 
 ## Privacy
 
-Runs on your computer only. It talks to App Store Connect (and Apple Ads, if you connect it) with your keys and sends nothing but currency codes and dates to the exchange-rate services. No telemetry. Settings and keys are in `~/.config/asc-payout` (Windows: `%USERPROFILE%\.config\asc-payout`), downloaded reports in `~/.cache/asc-payout`; `asc-payout status` shows the exact folders. Copy the settings folder to move your setup to another computer, and keep it private: it holds your API keys.
+Runs on your computer only (also `asc-payout mcp` and the Claude Desktop extension). It talks to App Store Connect (and Apple Ads, if you connect it) with your keys and sends nothing but currency codes and dates to the exchange-rate services. No telemetry. Settings and keys are in `~/.config/asc-payout` (Windows: `%USERPROFILE%\.config\asc-payout`), downloaded reports in `~/.cache/asc-payout`; `asc-payout status` shows the exact folders. Copy the settings folder to move your setup to another computer, and keep it private: it holds your API keys.
 
 ## Develop
 

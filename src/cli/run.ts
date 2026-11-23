@@ -13,6 +13,7 @@ import { computeSubscriptions, renderSubscriptions } from "../earnings/subscript
 import { computeChurn, renderChurn } from "../earnings/churn";
 import { computeProfit, renderProfit } from "../earnings/profit";
 import { adsWizard } from "./ads-setup";
+import { serveMcp } from "../mcp/server";
 import { HELP, parseArgs, UsageError, type Args } from "./args";
 import { churnCsv, historyCsv, monthCsv, profitCsv, subscriptionsCsv } from "./csv";
 import { saveExport } from "./export";
@@ -762,7 +763,7 @@ export async function run(argv: string[]): Promise<number> {
   cleanUpAfterUpdate();
   clearScreen(args);
   // a person at a terminal is asked whether to update first (not scripts, --json, --csv)
-  const asks = !args.json && !args.csv && !["help", "version", "update", "watch"].includes(args.command);
+  const asks = !args.json && !args.csv && !["help", "version", "update", "watch", "mcp"].includes(args.command);
   if (asks) {
     const exit = await offerUpdate(VERSION, argv);
     if (exit !== null) return exit;
@@ -799,5 +800,7 @@ export async function run(argv: string[]): Promise<number> {
       return profit(args);
     case "watch":
       return watch(args);
+    case "mcp":
+      return serveMcp(run);
   }
 }

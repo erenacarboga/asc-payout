@@ -82,12 +82,14 @@ describe("key files", () => {
 });
 
 describe("agent skill", () => {
-  test("the plugin version follows package.json, and the skill's name matches its folder", async () => {
+  test("plugin and extension versions follow package.json, and the skill's name matches its folder", async () => {
     const { readFileSync } = await import("node:fs");
     const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
     const plugin = JSON.parse(readFileSync(".claude-plugin/plugin.json", "utf-8"));
     const market = JSON.parse(readFileSync(".claude-plugin/marketplace.json", "utf-8"));
     expect(plugin.version).toBe(pkg.version);
+    expect(JSON.parse(readFileSync("extension/manifest.json", "utf-8")).version).toBe(pkg.version);
+    expect(JSON.parse(readFileSync("extension/package.json", "utf-8")).version).toBe(pkg.version);
     expect(market.plugins[0].name).toBe(plugin.name);
     const skill = readFileSync("skills/asc-payout/SKILL.md", "utf-8");
     expect(skill).toMatch(/^---\nname: asc-payout\ndescription: .{20,1024}\n---\n/);

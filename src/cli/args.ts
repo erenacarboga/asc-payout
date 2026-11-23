@@ -1,6 +1,6 @@
 import { t } from "../i18n";
 
-export type Command = "report" | "history" | "subs" | "churn" | "profit" | "watch" | "setup" | "status" | "demo" | "doctor" | "update" | "help" | "version";
+export type Command = "report" | "history" | "subs" | "churn" | "profit" | "mcp" | "watch" | "setup" | "status" | "demo" | "doctor" | "update" | "help" | "version";
 
 export interface Args {
   command: Command;
@@ -33,6 +33,7 @@ const COMMANDS: Record<string, Command> = {
   subs: "subs",
   churn: "churn",
   profit: "profit",
+  mcp: "mcp",
   watch: "watch",
   doctor: "doctor",
   update: "update",
@@ -133,6 +134,7 @@ Usage
   asc-payout churn                 refunds, cancellations and why, trial conversion by week
   asc-payout profit                revenue next to Apple Ads spend: profit and ROAS by app
   asc-payout watch                 tell me when last month's report is published
+  asc-payout mcp                   serve the same data to AI assistants (MCP, over stdio)
   asc-payout setup                 add, edit or remove accounts
   asc-payout status                show accounts and where files are kept
   asc-payout demo                  try it with made-up data

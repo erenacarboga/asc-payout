@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.7.0
 
+- `asc-payout mcp`: a Model Context Protocol server over stdio, so AI assistants (Claude Desktop, Claude Code, VS Code, Cursor, ...) can ask asc-payout directly. Tools: accounts, a month, history, subscriptions, refunds and cancellations, profit after Apple Ads. Each runs the matching command with `--json`, so the numbers are the ones the terminal shows. Runs locally; keys never leave the computer.
+- A Claude Desktop extension (`asc-payout.mcpb`, attached to every release): open it to install. It starts the installed asc-payout, and explains how to install or update it when it can't.
 - An Agent Skill (`skills/asc-payout`) so AI coding assistants can answer earnings questions by running asc-payout: a Claude Code plugin (`/plugin marketplace add erenacarboga/asc-payout`), and a folder to copy for VS Code (GitHub Copilot), Cursor and Codex. With a field-by-field reference of every `--json` output.
 - `--help` lists `ASC_PAYOUT_LANG`.
 - CI: the macOS check runs on its own (Intel Mac), so a long wait for a Mac runner no longer fails the main checks.

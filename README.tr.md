@@ -112,7 +112,27 @@ Bir şey yüklenirken ekranda hangi adımda olduğunu, günlük raporlar için i
 
 ## Yapay zekâ asistanından kullanma
 
-Depoda bir [Agent Skill](skills/asc-payout/SKILL.md) var. Kodlama asistanlarına *"Apple Ekim için bana ne kadar ödeyecek?"*, *"bu ay en çok iade hangi uygulamada?"* veya *"Apple Ads kâr ettiriyor mu?"* gibi soruları `asc-payout`'u `--json` ile çalıştırıp sonucu doğru okuyarak (mali aylar, Raporlar ve Trendler, tahmin ve kesin rakam farkı) cevaplamayı öğretir. Anahtarlarınızı asla okumaz ve göstermez.
+Normal cümlelerle, istediğiniz dilde sorun: *"Apple Ekim için bana ne kadar ödeyecek?"*, *"bu ay en çok iade hangi uygulamada?"*, *"Apple Ads kâr ettiriyor mu?"*. İki yolu var, ikisi de bilgisayarınızda ve kurduğunuz hesaplarla (`asc-payout setup`) çalışır; anahtarlarınız bilgisayardan çıkmaz, sohbete sadece sonuçlar gider.
+
+### Claude Desktop: uzantı
+
+1. asc-payout'u kurun ve bir kez `asc-payout setup` çalıştırın (bkz. [Kurulum](#kurulum)).
+2. [asc-payout.mcpb](https://github.com/erenacarboga/asc-payout/releases/latest/download/asc-payout.mcpb) dosyasını indirip açın: Claude Desktop uzantıyı kurmayı önerir. (Ya da Ayarlar > Uzantılar > Uzantı Yükle.)
+3. Herhangi bir sohbette sorun. Claude uzantının araçlarını kullanır: hesaplar, bir ay, geçmiş, abonelikler, iadeler ve iptaller, Apple Ads sonrası kâr.
+
+Uzantı, kurulu `asc-payout`'u `asc-payout mcp` ile başlatır. Bulamazsa Claude size nasıl kuracağınızı söyler; alışılmadık bir yerdeyse yolunu uzantının ayarlarından verebilirsiniz.
+
+### Her MCP istemcisi: `asc-payout mcp`
+
+`asc-payout mcp`, aynı araçları sunan bir [Model Context Protocol](https://modelcontextprotocol.io) sunucusudur (stdio). Barındırılacak bir sunucu yoktur: asistan gerektiğinde bilgisayarınızda kendisi başlatır.
+
+- **Claude Code:** `claude mcp add asc-payout -- asc-payout mcp`
+- **VS Code:** `.vscode/mcp.json` içinde (veya kullanıcı MCP ayarlarında): `{ "servers": { "asc-payout": { "type": "stdio", "command": "asc-payout", "args": ["mcp"] } } }`
+- **Cursor** ve diğerleri: `{ "mcpServers": { "asc-payout": { "command": "asc-payout", "args": ["mcp"] } } }`
+
+### Agent Skill
+
+Komut çalıştırabilen kodlama asistanları için depoda bir [Agent Skill](skills/asc-payout/SKILL.md) de var. Aynı soruları `asc-payout`'u `--json` ile çalıştırıp sonucu doğru okuyarak (mali aylar, Raporlar ve Trendler, tahmin ve kesin rakam farkı) cevaplamayı öğretir. Anahtarlarınızı asla okumaz ve göstermez.
 
 **Claude Code**, eklenti olarak:
 
