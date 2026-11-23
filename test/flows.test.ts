@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runDoctor } from "../src/cli/doctor";
-import { run } from "../src/cli/run";
+import { navigate, run } from "../src/cli/run";
 import { runSetup } from "../src/cli/setup";
 import { ui } from "../src/cli/ui";
 import { assetName, compareVersions } from "../src/cli/update";
@@ -132,9 +132,49 @@ describe("menus", () => {
         return c.default;
       }],
     ]);
+    ui.key = async () => "q";
     await run(["--no-clear"]).catch(() => 0);
     expect(loadSettings().lastAccount).toBe("Personal");
     expect(monthDefault).toBeDefined();
+  });
+
+  test("arrow keys move between months and accounts, c switches to countries", async () => {
+    freshAccounts([["Company", "80000001"], ["Personal", "80000002"]]);
+    serve(world());
+    script([
+      ["Account:", () => "Company"],
+      ["Month:", (c) => c.default],
+    ]);
+    const keys = ["left", "down", "c", "x", "q"];
+    ui.key = async () => keys.shift()!;
+    await run(["--no-clear"]);
+    expect(keys).toEqual([]);
+    const screens = output.filter((t) => t.includes("App / product") || t.includes("Country"));
+    // first screen, after left, after down (Personal), after c (countries); "x" is ignored
+    expect(screens).toHaveLength(4);
+    expect(screens[2]).toContain("Personal");
+    expect(screens[3]).toContain("Country");
+  });
+});
+
+describe("navigate", () => {
+  const nov = { year: 2026, month: 11 };
+  const s = { choice: 0, ym: { year: 2026, month: 10 }, by: "app" as const };
+  test("months", () => {
+    expect(navigate(s, "left", 3, nov)).toEqual({ ...s, ym: { year: 2026, month: 9 } });
+    expect(navigate(s, "right", 3, nov)).toEqual({ ...s, ym: nov });
+    expect(navigate({ ...s, ym: nov }, "right", 3, nov)).toBeNull(); // not past the current month
+    expect(navigate({ ...s, ym: { year: 2026, month: 1 } }, "left", 3, nov)).toEqual({ ...s, ym: { year: 2025, month: 12 } });
+  });
+  test("accounts wrap around", () => {
+    expect(navigate(s, "up", 3, nov)).toMatchObject({ choice: 2 });
+    expect(navigate({ ...s, choice: 2 }, "down", 3, nov)).toMatchObject({ choice: 0 });
+    expect(navigate(s, "down", 1, nov)).toBeNull();
+  });
+  test("other keys", () => {
+    expect(navigate(s, "c", 1, nov)).toMatchObject({ by: "country" });
+    expect(navigate(s, "q", 1, nov)).toBe("quit");
+    expect(navigate(s, "z", 1, nov)).toBeNull();
   });
 });
 

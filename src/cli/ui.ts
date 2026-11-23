@@ -1,4 +1,5 @@
 import { confirm, input, select } from "@inquirer/prompts";
+import { emitKeypressEvents } from "node:readline";
 
 /**
  * Everything that talks to the person at the terminal goes through here, so tests can
@@ -19,6 +20,21 @@ export const ui = {
   print: (text: string): void => {
     process.stdout.write(text.endsWith("\n") ? text : text + "\n");
   },
+  /** Waits for one key press: "left", "right", "up", "down", "q", "c", ... (Ctrl+C and Esc give "q"). */
+  key: (): Promise<string> =>
+    new Promise((resolve) => {
+      const stdin = process.stdin;
+      emitKeypressEvents(stdin);
+      stdin.setRawMode?.(true);
+      stdin.resume();
+      stdin.once("keypress", (text: string | undefined, key: { name?: string; ctrl?: boolean } | undefined) => {
+        stdin.setRawMode?.(false);
+        stdin.pause();
+        if (key?.ctrl && key.name === "c") return resolve("q");
+        if (key?.name === "escape") return resolve("q");
+        resolve(key?.name ?? text ?? "");
+      });
+    }),
   /** Progress and problems (stderr) */
   note: (text: string): void => {
     process.stderr.write(text.endsWith("\n") ? text : text + "\n");

@@ -17,7 +17,34 @@ function fit(text: string, width: number): string {
 
 const signed = (n: number, currency: string) => (n >= 0 ? "+" : "-") + money(Math.abs(n), currency);
 
-export function renderMonth(r: MonthResult): string {
+const BARS = "▁▂▃▄▅▆▇█";
+
+/** One character per day, a space between weeks; "·" for days without a report yet. */
+export function sparkline(values: (number | null)[]): string {
+  const max = Math.max(0, ...values.filter((v): v is number => v !== null));
+  return values
+    .map((v, i) => {
+      const bar = v === null ? "·" : max <= 0 ? BARS[0] : BARS[Math.min(7, Math.max(0, Math.round((v / max) * 7)))];
+      return (i > 0 && i % 7 === 0 ? " " : "") + bar;
+    })
+    .join("");
+}
+
+let regionNames: Intl.DisplayNames | null = null;
+function countryName(code: string): string {
+  try {
+    regionNames ??= new Intl.DisplayNames(["en"], { type: "region" });
+    return regionNames.of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
+export interface RenderOptions {
+  by?: "app" | "country";
+}
+
+export function renderMonth(r: MonthResult, options: RenderOptions = {}): string {
   const out: string[] = [];
   const m = (n: number) => money(n, r.currency);
   const hasReports = r.reports.total !== null;
@@ -28,9 +55,14 @@ export function renderMonth(r: MonthResult): string {
   out.push("");
   out.push(bold(`  ${r.account.name}  ·  ${monthLabel(r.month)}`) + dim(`  ·  ${periodLabel(r.period)}`));
   out.push("");
-  out.push(dim(`  ${"App / product".padEnd(NAME)}${"Reports".padStart(AMOUNT)}${"Trends".padStart(AMOUNT)}`));
+  out.push(dim(`  ${(options.by === "country" ? "Country" : "App / product").padEnd(NAME)}${"Reports".padStart(AMOUNT)}${"Trends".padStart(AMOUNT)}`));
   out.push(rule);
-  r.apps.forEach((app, i) => {
+  if (options.by === "country") {
+    for (const c of r.countries) {
+      out.push(`  ${fit(`${countryName(c.code)} (${c.code})`, NAME - 1)} ${reportsCell(c.reports).padStart(AMOUNT)}${trendsCell(c.trends).padStart(AMOUNT)}`);
+    }
+    if (r.countries.length === 0) out.push(dim("  No paid sales in this period."));
+  } else r.apps.forEach((app, i) => {
     if (i > 0) out.push("");
     out.push(bold(`  ${fit(app.name, NAME - 1)} ${reportsCell(app.reports, app.unconverted?.reports).padStart(AMOUNT)}${trendsCell(app.trends, app.unconverted?.trends).padStart(AMOUNT)}`));
     const showItems = !(app.items.length === 1 && app.items[0].name === "(App sales)");
@@ -40,7 +72,7 @@ export function renderMonth(r: MonthResult): string {
       }
     }
   });
-  if (r.apps.length === 0) out.push(dim("  No paid sales in this period."));
+  if (options.by !== "country" && r.apps.length === 0) out.push(dim("  No paid sales in this period."));
   out.push(rule);
   out.push(bold(`  ${"Total".padEnd(NAME)}${(hasReports ? m(r.reports.total!) : "—").padStart(AMOUNT)}${m(r.trends.total).padStart(AMOUNT)}`));
   out.push("");
@@ -75,7 +107,16 @@ export function renderMonth(r: MonthResult): string {
   // Trends
   const t = r.trends;
   const through = t.through ? ` (through ${shortDate(t.through, false)})` : "";
-  out.push(`  Trends    ${t.available} of ${t.days} days${through}${t.available < t.days && !t.problems.length ? ", month still running" : ""}.`);
+  if (t.skipped) {
+    out.push(dim("  Trends    not downloaded (the Financial Report is final)."));
+  } else {
+    out.push(`  Trends    ${t.available} of ${t.days} days${through}${t.available < t.days && !t.problems.length ? ", month still running" : ""}.`);
+    const known = r.daily.filter((d): d is { date: string; total: number } => d.total !== null);
+    if (known.some((d) => d.total !== 0)) {
+      const peak = known.reduce((a, b) => (b.total > a.total ? b : a));
+      out.push(`  Daily     ${sparkline(r.daily.map((d) => d.total))}` + dim(`  peak ${m(peak.total)} on ${shortDate(peak.date, false)}`));
+    }
+  }
   for (const problem of t.problems) out.push(yellow(`            ${problem}`));
   if (t.forecast) {
     out.push(
@@ -83,13 +124,19 @@ export function renderMonth(r: MonthResult): string {
         dim(`  (${t.forecast.remainingDays} more day(s) at ${m(t.forecast.perDay)}/day, the last ${t.forecast.basisDays} days' average)`),
     );
   }
-  if (hasReports && t.total !== 0) {
+  if (hasReports && t.total !== 0 && !t.skipped) {
     const diff = r.reports.total! - t.total;
     const pct = (diff / Math.abs(t.total)) * 100;
-    out.push(
-      `  Diff      Reports ${signed(diff, r.currency)} (${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%) vs Trends` +
-        dim("  (timing, refunds, adjustments)"),
-    );
+    const head = `  Diff      Reports ${signed(diff, r.currency)} (${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%) vs Trends`;
+    const s = r.settlement;
+    if (s && s.later !== undefined) {
+      // exact: diff = earlier - later
+      out.push(head + dim(", because the Financial Report has:"));
+      out.push(`            ${signed(s.earlier, r.currency).padStart(11)}  sales made before ${shortDate(r.period.start, false)}, settled now`);
+      out.push(`            ${signed(-s.later, r.currency).padStart(11)}  this period's sales Apple settles in the next report`);
+    } else {
+      out.push(head + dim("  (timing, refunds, adjustments)"));
+    }
   }
 
   // Rates

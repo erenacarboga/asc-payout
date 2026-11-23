@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0
+
+- The difference between Reports and Trends is explained to the cent from the Financial Detail Report: sales made before the month that Apple settled in this report, and this month's sales that settle in the next one.
+- Daily bar chart of the month (Trends) with the best day.
+- Keyboard: a month picked from the menus stays on screen; arrow keys move between months and accounts, `c` toggles apps and countries, `q` quits.
+- `asc-payout history`: payments of the last 12 months (`--months N`), per account and in total, month-on-month change, and the biggest apps.
+- `--by country`: earnings per country.
+- Months long closed without a Financial Report (no sales) are remembered, not asked for again.
+- Financial Detail rows without a transaction date (they occur in real reports) are counted by their settlement date.
+
 ## 1.2.0
 
 - Reports are written to the cache in one step and checked before every use (row count or totals against the report's own summary); a damaged or incomplete file is downloaded again instead of being counted.

@@ -61,3 +61,28 @@ export const financialReport = [
 ].join("\n");
 
 export const financialReportBadSummary = financialReport.replace("US\tUSD\t4\t32.72", "US\tUSD\t4\t50.00");
+
+/** Financial Detail Report for the same money as `financialReport`; one sale was made before the period. */
+export const detailReport = [
+  "Vendor Name\tExample",
+  "Start Date\t09/27/2026",
+  "End Date\t10/31/2026",
+  [
+    "Transaction Date", "Settlement Date", "Apple Identifier", "SKU", "Title", "Developer Name", "Product Type Identifier",
+    "Country of Sale", "Quantity", "Partner Share", "Extended Partner Share", "Partner Share Currency", "Customer Price",
+    "Customer Currency", "Sale or Return", "Promo Code", "Order Type", "Region",
+  ].join("\t"),
+  ...[
+    ["09/24/2026", "notes.plus.week", 1, 4.24, "USD", "US"], // made before Sep 27, settled in October
+    ["10/03/2026", "notes.plus.week", 3, 4.24, "USD", "US"],
+    ["10/06/2026", "notes.plus.week", -1, 4.24, "USD", "US"],
+    ["10/05/2026", "notes.plus.week", 2, 3.6, "EUR", "FR"],
+    ["10/10/2026", "notes.plus.life", 1, 20, "USD", "US"],
+  ].map(([date, sku, qty, share, cur, country]) =>
+    [date, "10/31/2026", "910001", sku, "x", "Example", "IAY", country, qty, Number(share).toFixed(2), (Number(qty) * Number(share)).toFixed(2), cur, "0", cur, Number(qty) < 0 ? "R" : "S", "", "", "", ""].join("\t"),
+  ),
+  "",
+  "Country Of Sale\tPartner Share Currency\tQuantity\tExtended Partner Share",
+  "FR\tEUR\t2\t7.20",
+  "US\tUSD\t4\t32.72",
+].join("\n");

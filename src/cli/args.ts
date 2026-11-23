@@ -1,10 +1,14 @@
-export type Command = "report" | "setup" | "status" | "demo" | "doctor" | "update" | "help" | "version";
+export type Command = "report" | "history" | "setup" | "status" | "demo" | "doctor" | "update" | "help" | "version";
 
 export interface Args {
   command: Command;
   account?: string;
   month?: string;
   currency?: string;
+  /** history: how many months */
+  months?: number;
+  /** group the month view by app (default) or country */
+  by?: "app" | "country";
   json: boolean;
   noCache: boolean;
   /** keep what is on the screen instead of clearing it first */
@@ -18,13 +22,16 @@ const COMMANDS: Record<string, Command> = {
   setup: "setup",
   status: "status",
   demo: "demo",
+  history: "history",
   doctor: "doctor",
   update: "update",
   help: "help",
   version: "version",
 };
 
-const VALUE_FLAGS: Record<string, "account" | "month" | "currency"> = {
+const VALUE_FLAGS: Record<string, "account" | "month" | "currency" | "months" | "by"> = {
+  "--months": "months",
+  "--by": "by",
   "--account": "account",
   "-a": "account",
   "--month": "month",
@@ -59,7 +66,17 @@ export function parseArgs(argv: string[]): Args {
     if (flag in VALUE_FLAGS) {
       const value = inline ?? argv[++i];
       if (value === undefined || (inline === undefined && value.startsWith("-"))) throw new UsageError(`${flag} needs a value`);
-      args[VALUE_FLAGS[flag]] = value;
+      const key = VALUE_FLAGS[flag];
+      if (key === "months") {
+        const n = Number(value);
+        if (!Number.isInteger(n) || n < 1 || n > 36) throw new UsageError("--months expects a number from 1 to 36");
+        args.months = n;
+      } else if (key === "by") {
+        if (value !== "app" && value !== "country") throw new UsageError('--by expects "app" or "country"');
+        args.by = value;
+      } else {
+        args[key] = value;
+      }
     } else if (flag in SWITCHES) {
       if (inline !== undefined) throw new UsageError(`${flag} does not take a value`);
       const before = args.command;
@@ -87,6 +104,7 @@ asc-payout - what Apple will pay you, per Apple fiscal month
 Usage
   asc-payout                       pick an account and a month
   asc-payout -a <account> -m <YYYY-MM>
+  asc-payout history               the last 12 months, with the biggest apps
   asc-payout setup                 add, edit or remove accounts
   asc-payout status                show accounts and where files are kept
   asc-payout demo                  try it with made-up data
@@ -97,6 +115,8 @@ Options
   -a, --account <name>   account name or vendor number, or "all"
   -m, --month <YYYY-MM>  fiscal month, named after the calendar month (2026-10 = October 2026)
   -c, --currency <CODE>  show amounts in this currency for this run (USD, EUR, TRY, ...)
+      --by country       one row per country instead of per app
+      --months <N>       history: number of months (default 12)
       --json             print the result as JSON (progress goes to stderr)
       --no-cache         download the reports again
       --no-clear         don't clear the screen first (or ASC_PAYOUT_NO_CLEAR=1)

@@ -29,7 +29,10 @@ One or many accounts (say, a company and a personal developer account), every cu
   Reports   Apple Financial Report, the final figures.
             Rows match the report's own country summary.
   Trends    35 of 35 days (through Oct 31).
-  Diff      Reports +$27.57 (+2.4%) vs Trends  (timing, refunds, adjustments)
+  Daily     ▆▅▄▄▄▄▅ ▅▅▅▄▅▅▆ ▅▄▅▄▄▅▇ ▆▅▆▅▄▅▇ ▆▄▆▆▅▅█  peak $55.76 on Oct 31
+  Diff      Reports +$27.57 (+2.4%) vs Trends, because the Financial Report has:
+               +$105.45  sales made before Sep 27, settled now
+                -$77.88  this period's sales Apple settles in the next report
   Rates     as of Oct 31, 2026 · ECB
             Before tax withholding and bank fees; Apple's rates differ slightly.
 ```
@@ -89,7 +92,11 @@ asc-payout -a personal -m 2026-10   no questions; a part of the account name is 
 asc-payout -a all                   every account, then a combined table
 asc-payout -m 2026-11 -c EUR        a running month, shown in euros
 asc-payout -a all --json            machine-readable output
+asc-payout history -a all           the last 12 months side by side, with your biggest apps
+asc-payout -m 2026-10 --by country  where the money came from
 ```
+
+Picked from the menus, the month stays on screen: **← →** go to the previous or next month, **↑ ↓** switch account (or all accounts), **c** switches between apps and countries, **q** quits.
 
 | Option | |
 |---|---|
@@ -99,6 +106,8 @@ asc-payout -a all --json            machine-readable output
 | `--json` | JSON on stdout, progress on stderr |
 | `--no-cache` | download reports again |
 | `--refresh` | reload app names |
+| `--by country` | one row per country instead of per app |
+| `history [--months N]` | payments of the last N months (default 12), month-on-month change, top apps |
 | `--no-clear` | keep the screen; by default it is cleared first (also `ASC_PAYOUT_NO_CLEAR=1`) |
 | `setup`, `status`, `demo` | manage accounts, show where files are, try with made-up data |
 | `doctor` | check clock, keys, access to each report, network and cache, with the fix for anything wrong |
@@ -111,6 +120,8 @@ For scripts and CI, an account can come from environment variables instead of se
 - **Fiscal months.** Apple's fiscal year ends on the last Saturday of September; quarters are 5, 4 and 4 weeks, and a 53-week year adds its extra week to December. When the Financial Report exists, its own dates are used.
 - **Reports** add up `Extended Partner Share` per `Partner Share Currency`, and check the rows against the per-country summary at the end of the same report.
 - **Trends** add up `Units × Developer Proceeds` per `Currency of Proceeds` from one daily report per day; refunds have negative units. Days Apple has not published yet are told apart from days without sales, and failures are listed instead of counted as zero.
+- **Why Reports and Trends differ, exactly.** The Financial Detail Report has the day of every transaction. asc-payout splits the difference into sales made before the month that Apple settled in this report, and this month's sales that Apple settles in the next one; the two add up to the difference to the cent. (Shown only when the detail report adds up exactly to the Financial Report.)
+- **Daily** shows one bar per day of the month (Trends), a space between weeks, `·` for days Apple hasn't published yet.
 - **Forecast**, for a running month: sales so far plus the remaining days at the last 7 days' average.
 - **Exchange rates** are the same for both columns, taken on the last day of the month: ECB reference rates ([Frankfurter](https://frankfurter.dev)), then [exchange-api](https://github.com/fawazahmed0/exchange-api) and [open.er-api.com](https://www.exchangerate-api.com) for currencies the ECB doesn't cover. An amount without any rate is listed separately, never counted 1:1.
 - **Reports and Trends differ** by a few percent in a normal month: sales near the month edge can fall into the neighbouring Financial Report, refunds can be dated differently, and adjustments only appear in Reports. For an account that only sold on a few days, the gap can be large.

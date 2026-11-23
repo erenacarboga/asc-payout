@@ -17,10 +17,13 @@ const FINANCE_COLUMNS = {
   appleId: "Apple Identifier",
   title: "Title",
   typeId: "Product Type Identifier",
+  country: "Country Of Sale",
 } as const;
 
 export interface FinancialReport {
   products: Map<string, Product>;
+  /** per country of sale, per currency */
+  countries: Record<string, Record<string, number>>;
   /** The period Apple states in the rows (most common start/end pair) */
   period: Period | null;
   /** Currencies where the rows don't add up to the report's own summary */
@@ -31,7 +34,8 @@ export interface FinancialReport {
 export function readFinancialReport(text: string): FinancialReport {
   const { header, rows } = splitTsv(text);
   const products = new Map<string, Product>();
-  if (header.length === 0) return { products, period: null, mismatches: [], rowCount: 0 };
+  const countries: Record<string, Record<string, number>> = {};
+  if (header.length === 0) return { products, countries, period: null, mismatches: [], rowCount: 0 };
 
   const c = columns(header, FINANCE_COLUMNS, "Financial Report");
   const rowTotals: Record<string, number> = {};
@@ -51,6 +55,10 @@ export function readFinancialReport(text: string): FinancialReport {
       const amount = Number(r[c.extended]) || 0;
       periods.set(`${start}|${end}`, (periods.get(`${start}|${end}`) ?? 0) + 1);
       rowTotals[currency] = (rowTotals[currency] ?? 0) + amount;
+      if (amount !== 0 && currency) {
+        const bucket = (countries[(r[c.country] ?? "").trim() || "??"] ??= {});
+        bucket[currency] = (bucket[currency] ?? 0) + amount;
+      }
       const id = (r[c.id] ?? "").trim() || (r[c.appleId] ?? "").trim();
       if (amount !== 0 && currency && id) {
         addAmount(
@@ -83,5 +91,5 @@ export function readFinancialReport(text: string): FinancialReport {
   const top = [...periods.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
   const period = top ? { start: top.split("|")[0], end: top.split("|")[1] } : null;
 
-  return { products, period, mismatches, rowCount };
+  return { products, countries, period, mismatches, rowCount };
 }

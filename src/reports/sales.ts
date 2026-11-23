@@ -16,6 +16,24 @@ const SALES_COLUMNS = {
   parent: "Parent Identifier",
 } as const;
 
+/** Per country (ISO code), per currency of proceeds. */
+export function salesByCountry(reports: string[], into: Record<string, Record<string, number>> = {}): Record<string, Record<string, number>> {
+  for (const text of reports) {
+    const { header, rows } = splitTsv(text);
+    if (header.length === 0) continue;
+    const c = columns(header, { units: "Units", proceeds: "Developer Proceeds", currency: "Currency of Proceeds", country: "Country Code" }, "Sales report");
+    for (const r of rows) {
+      const amount = (Number(r[c.units]) || 0) * (Number(r[c.proceeds]) || 0);
+      const currency = (r[c.currency] ?? "").trim();
+      if (amount === 0 || !currency) continue;
+      const country = (r[c.country] ?? "").trim() || "??";
+      const bucket = (into[country] ??= {});
+      bucket[currency] = (bucket[currency] ?? 0) + amount;
+    }
+  }
+  return into;
+}
+
 /** Adds the paid rows of one or more daily reports into `into` (by product). */
 export function readSalesReports(reports: string[], into = new Map<string, Product>()): Map<string, Product> {
   for (const text of reports) {

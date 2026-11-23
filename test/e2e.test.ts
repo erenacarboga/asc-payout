@@ -7,7 +7,7 @@ import { ui } from "../src/cli/ui";
 import type { Account } from "../src/config/settings";
 import { computeMonth } from "../src/earnings/month";
 import { ascRequests, freshAccounts, serve, world, type FakeWorld } from "./fake-asc";
-import { financialReport, salesDayA, salesDayB } from "./samples";
+import { detailReport, financialReport, salesDayA, salesDayB } from "./samples";
 
 const OCT = { year: 2026, month: 10 };
 const opts = { currency: "USD", useCache: true, refreshCatalog: false, log: () => {} };
@@ -22,6 +22,7 @@ function october(extra: Partial<FakeWorld> = {}): FakeWorld {
   sales["2026-10-06"] = salesDayB;
   return world({
     finance: { "2027-01": financialReport },
+    detail: { "2027-01": detailReport },
     sales,
     apps: [
       { id: "900001", sku: "app.notes", name: "Notes" },
@@ -65,6 +66,46 @@ describe("a closed month", () => {
     expect(notes.items.map((i) => i.name).sort()).toEqual(["Big Tip", "Plus Lifetime", "Plus Weekly"]);
     expect(r.apps.find((a) => a.name === "Paint")!.trends).toBeCloseTo(1.4, 6);
     expect(r.payment).toMatchObject({ basis: "reports", date: "2026-12-03" });
+  });
+
+  test("explains the difference: earlier sales settled now, this month's sales settled later", async () => {
+    serve(october());
+    const r = await computeMonth(account, OCT, opts);
+    const s = r.settlement!;
+    expect(s.earlier).toBeCloseTo(4.24, 6);
+    expect(s.inPeriod).toBeCloseTo(r.reports.total! - 4.24, 6);
+    expect(s.later).toBeCloseTo(r.trends.total - s.inPeriod, 6);
+    // the pieces add up exactly
+    expect(s.earlier + s.inPeriod).toBeCloseTo(r.reports.total!, 9);
+  });
+
+  test("a detail row without a transaction date (seen in real reports) still counts", async () => {
+    // move $4.24 of October sales into a row whose transaction date Apple left empty
+    const blank = detailReport.replace("10/03/2026\t10/31/2026\t910001\tnotes.plus.week\tx\tExample\tIAY\tUS\t3\t4.24\t12.72", "10/03/2026\t10/31/2026\t910001\tnotes.plus.week\tx\tExample\tIAY\tUS\t2\t4.24\t8.48\tUSD\t0\tUSD\tS\t\t\t\t\n\t10/08/2026\t910001\tnotes.plus.week\tx\tExample\tIAY\tUS\t1\t4.24\t4.24");
+    expect(blank).not.toBe(detailReport);
+    serve(october({ detail: { "2027-01": blank } }));
+    const r = await computeMonth(account, OCT, opts);
+    expect(r.settlement).toBeDefined();
+    expect(r.settlement!.earlier).toBeCloseTo(4.24, 6);
+    expect(r.settlement!.earlier + r.settlement!.inPeriod).toBeCloseTo(r.reports.total!, 9);
+  });
+
+  test("a detail report that does not add up to the Financial Report is not used", async () => {
+    // consistent in itself (rows match its own summary) but $1 more than the Financial Report
+    const off = detailReport.replace("1\t4.24\t4.24\tUSD", "1\t5.24\t5.24\tUSD").replace("US\tUSD\t4\t32.72", "US\tUSD\t4\t33.72");
+    expect(off).not.toBe(detailReport);
+    serve(october({ detail: { "2027-01": off } }));
+    const r = await computeMonth(account, OCT, opts);
+    expect(r.settlement).toBeUndefined();
+  });
+
+  test("daily totals and countries", async () => {
+    serve(october());
+    const r = await computeMonth(account, OCT, opts);
+    expect(r.daily).toHaveLength(35);
+    expect(r.daily.find((d) => d.date === "2026-10-05")!.total).toBeCloseTo(12.72 + 7.92, 6);
+    expect(r.daily.find((d) => d.date === "2026-10-07")!.total).toBe(0);
+    expect(r.countries[0].code).toBe("US");
   });
 
   test("a second run uses only stored data (no network at all)", async () => {

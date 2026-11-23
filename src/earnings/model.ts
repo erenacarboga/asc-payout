@@ -32,12 +32,24 @@ export interface MonthResult {
   trends: {
     days: number;
     available: number;
+    /** daily reports were not downloaded (history view with a Financial Report) */
+    skipped?: boolean;
     through?: string;
     problems: string[];
     total: number;
     forecast?: { total: number; perDay: number; remainingDays: number; basisDays: number };
   };
   apps: AppGroup[];
+  /** Trends per day of the period; null = not available (yet) */
+  daily: { date: string; total: number | null }[];
+  countries: { code: string; reports: number; trends: number }[];
+  /**
+   * Why Reports differ from Trends, from the Financial Detail Report:
+   * `earlier` = sales made before the period, settled in this report;
+   * `inPeriod` = this period's sales settled in this report;
+   * `later` = this period's sales Apple settles in the next report (Trends - inPeriod).
+   */
+  settlement?: { earlier: number; inPeriod: number; later?: number };
   rates: {
     date: string;
     sources: string;

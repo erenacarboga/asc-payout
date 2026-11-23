@@ -64,6 +64,8 @@ asc-payout -a all --json            JSON çıktı
 
 Program açılınca ekranı temizler; istemezseniz `--no-clear` (veya `ASC_PAYOUT_NO_CLEAR=1`).
 
+Menüden seçilen ay ekranda kalır: **← →** önceki/sonraki ay, **↑ ↓** hesap değiştir (veya tüm hesaplar), **c** uygulamalar ile ülkeler arasında geçiş, **q** çıkış. `asc-payout history` son 12 ayı, aylık değişimi ve en çok kazandıran uygulamaları gösterir; `--by country` ülkelere göre listeler.
+
 `2026-10` gibi bir ay, adını taşıdığı mali aydır: Ekim 2026 = 27 Eylül - 31 Ekim 2026.
 
 Bir sorun olursa `asc-payout doctor` saati, anahtarları, her rapora erişimi, ağı ve önbelleği tek tek kontrol eder ve düzeltme yolunu yazar. `asc-payout update` en son sürümü kurar.
@@ -73,6 +75,7 @@ Bir sorun olursa `asc-payout doctor` saati, anahtarları, her rapora erişimi, a
 - **Mali ay**: Apple'ın mali yılı Eylül'ün son cumartesi biter; çeyrekler 5, 4 ve 4 haftadır, 53 haftalık yıllarda fazla hafta Aralık'a eklenir. Financial Report varsa tarihler rapordan alınır.
 - **Reports**: `Extended Partner Share`, `Partner Share Currency` bazında toplanır ve raporun sonundaki ülke özetiyle karşılaştırılır.
 - **Trends**: Her günün raporunda `Units × Developer Proceeds` toplanır; iadeler negatif adetle düşer. Henüz yayınlanmamış günler ile satış olmayan günler ayrılır, okunamayan günler sıfır sayılmaz, listelenir.
+- **Farkın kesin açıklaması**: Financial Detail raporundaki işlem tarihleriyle fark ikiye ayrılır: aydan önce yapılıp bu raporda ödenen satışlar ve bu ayın bir sonraki rapora kalan satışları; ikisi farkı kuruşu kuruşuna verir.
 - **Tahmin**: Devam eden ayda şu ana kadarki satış + kalan günler × son 7 günün ortalaması.
 - **Kurlar**: İki sütun da ayın son günündeki kurla çevrilir (ECB; ECB'de olmayanlar için exchange-api ve open.er-api). Kuru bulunamayan tutar ayrıca listelenir, asla 1:1 sayılmaz.
 - **Fark**: Normal bir ayda Reports ile Trends birkaç yüzde farklıdır; ay sınırındaki satışlar komşu aya, iadeler farklı tarihe düşebilir, bazı düzeltmeler sadece Reports'ta görünür.

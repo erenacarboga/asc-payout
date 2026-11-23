@@ -41,6 +41,7 @@ export function isCompleteDetailReport(text: string): boolean {
   const headerAt = l.findIndex((row) => row.startsWith("Transaction Date\t"));
   if (headerAt < 0) return false;
   const header = l[headerAt].split("\t");
+  const settled = header.indexOf("Settlement Date");
   const amount = header.indexOf("Extended Partner Share");
   const currency = header.indexOf("Partner Share Currency");
   const rows: Record<string, number> = {};
@@ -49,7 +50,8 @@ export function isCompleteDetailReport(text: string): boolean {
   let sawSummary = false;
   for (const row of l.slice(headerAt + 1)) {
     const c = row.split("\t");
-    if (!inSummary && isUsDate(c[0])) {
+    // A transaction row has a transaction or a settlement date (Apple sometimes leaves the first empty)
+    if (!inSummary && (isUsDate(c[0]) || isUsDate(c[settled]))) {
       if (c.length < header.length) return false;
       rows[c[currency]] = (rows[c[currency]] ?? 0) + (Number(c[amount]) || 0);
     } else if (c[0] === "Country Of Sale") {
@@ -83,10 +85,17 @@ type FinanceKind = { type: "FINANCIAL"; region: "ZZ"; folder: "financial"; compl
 const FINANCIAL: FinanceKind = { type: "FINANCIAL", region: "ZZ", folder: "financial", complete: isCompleteFinancialReport };
 const DETAIL: FinanceKind = { type: "FINANCE_DETAIL", region: "Z1", folder: "financial-detail", complete: isCompleteDetailReport };
 
-async function downloadFinance(kind: FinanceKind, account: Account, reportDate: string, useCache: boolean): Promise<FinanceDownload> {
+const NOT_PUBLISHED = "#not-published\n";
+
+/**
+ * `final`: the month ended long ago, so "not published" will not change (an account
+ * without sales that month) and is remembered instead of asked again every time.
+ */
+async function downloadFinance(kind: FinanceKind, account: Account, reportDate: string, useCache: boolean, final = false): Promise<FinanceDownload> {
   const file = join(vendorCacheDir(account.vendor), kind.folder, `${reportDate}.tsv`);
   if (useCache) {
-    const cached = readCached(file, kind.complete);
+    const cached = readCached(file, (t) => t === NOT_PUBLISHED || kind.complete(t));
+    if (cached === NOT_PUBLISHED) return { status: "not-published" };
     if (cached !== null) return { status: "ok", text: cached, cached: true };
   }
   const query = new URLSearchParams({
@@ -101,15 +110,18 @@ async function downloadFinance(kind: FinanceKind, account: Account, reportDate: 
     writeFileAtomic(file, text);
     return { status: "ok", text, cached: false };
   } catch (error) {
-    if (error instanceof AscError && error.status === 404) return { status: "not-published" };
+    if (error instanceof AscError && error.status === 404) {
+      if (final) writeFileAtomic(file, NOT_PUBLISHED);
+      return { status: "not-published" };
+    }
     if (error instanceof AscError && error.status === 403) return { status: "no-access", message: error.message };
     return { status: "failed", message: (error as Error).message };
   }
 }
 
 /** `reportDate` is the fiscal YYYY-MM (see financeReportDate). */
-export const downloadFinancialReport = (account: Account, reportDate: string, useCache: boolean) =>
-  downloadFinance(FINANCIAL, account, reportDate, useCache);
+export const downloadFinancialReport = (account: Account, reportDate: string, useCache: boolean, final = false) =>
+  downloadFinance(FINANCIAL, account, reportDate, useCache, final);
 
 /** Same money as the Financial Report, one row per transaction with its transaction and settlement date. */
 export const downloadDetailReport = (account: Account, reportDate: string, useCache: boolean) =>
