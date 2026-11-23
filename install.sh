@@ -51,7 +51,10 @@ mkdir -p "$bin_dir"
 install -m 0755 "$work/$asset" "$bin_dir/asc-payout"
 [ "$(uname -s)" = Darwin ] && xattr -d com.apple.quarantine "$bin_dir/asc-payout" 2>/dev/null || true
 
-echo "Installed $("$bin_dir/asc-payout" --version) to $bin_dir/asc-payout"
+# the short name: ascp, unless something else already has that name here
+if [ ! -e "$bin_dir/ascp" ] || [ -L "$bin_dir/ascp" ]; then ln -sfn asc-payout "$bin_dir/ascp"; fi
+
+echo "Installed $("$bin_dir/asc-payout" --version) to $bin_dir/asc-payout (also: ascp)"
 
 # Make `asc-payout` work in new terminals: add the folder to PATH in the shell's startup
 # file, once. Skip with ASC_PAYOUT_NO_MODIFY_PATH=1.

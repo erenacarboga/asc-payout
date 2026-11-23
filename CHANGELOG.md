@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.1
+
+- `ascp`: the short name, the same program as `asc-payout`. On Windows `ascp.exe` is a hard link to `asc-payout.exe` (no extra space, starts like any program, no "Terminate batch job" prompt); on macOS and Linux a symbolic link. The installers create it, Homebrew and Scoop install it too, and an existing installation gets it on its next start. An `ascp` that belongs to another program (IBM Aspera has one) is never touched.
+- Updating works the same when started as `ascp`: the real program is replaced and the short name follows it.
+
 ## 1.8.0
 
 - **Only real figures, no projections.** The month-end forecast (sales so far plus the remaining days at a recent daily average) is gone everywhere: the month screen, the summary, history, monthly goals, `--json` (`trends.forecast` and the `forecast` payment basis are removed), the MCP tools and the demo.

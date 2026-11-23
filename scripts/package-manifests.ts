@@ -62,6 +62,7 @@ const brew = `class AscPayout < Formula
 
   def install
     bin.install Dir["asc-payout-*"].first => "asc-payout"
+    bin.install_symlink "asc-payout" => "ascp"
   end
 
   test do
@@ -79,7 +80,7 @@ const scoop = {
     "64bit": { url: `${base}/asc-payout-windows-x64.exe#/asc-payout.exe`, hash: sha("asc-payout-windows-x64.exe") },
     arm64: { url: `${base}/asc-payout-windows-arm64.exe#/asc-payout.exe`, hash: sha("asc-payout-windows-arm64.exe") },
   },
-  bin: "asc-payout.exe",
+  bin: ["asc-payout.exe", ["asc-payout.exe", "ascp"]],
   checkver: "github",
   autoupdate: {
     architecture: {

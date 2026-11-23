@@ -7,6 +7,7 @@ import { cacheDir } from "../config/paths";
 import { t } from "../i18n";
 import { withSpinner } from "./spinner";
 import { startUpdatePanel } from "./update-panel";
+import { ensureShortName, mainExecutable, SHORT } from "./shortname";
 import { ui } from "./ui";
 
 export const REPO = "erenacarboga/asc-payout";
@@ -44,7 +45,11 @@ function isMusl(): boolean {
 }
 
 /** True when running the compiled program (not `bun run src/main.ts`). */
-export const isCompiled = (): boolean => basename(process.execPath).toLowerCase().startsWith("asc-payout");
+/** True when running the compiled program (not `bun run src/main.ts`), by either name. */
+export const isCompiled = (): boolean => {
+  const name = basename(process.execPath).toLowerCase();
+  return name.startsWith("asc-payout") || name === SHORT || name === `${SHORT}.exe`;
+};
 
 function gh(args: string[]): { ok: boolean; out: string } {
   try {
@@ -148,7 +153,8 @@ export async function runUpdate(current: string): Promise<number> {
     if (!want || want.toLowerCase() !== have) throw new Error(t("Checksum does not match; nothing was changed."));
 
     panel?.step(3);
-    const target = process.execPath;
+    // the real program file, also when started as ascp
+    const target = mainExecutable();
     if (process.platform === "win32") {
       // A running .exe can be renamed but not overwritten. An older copy still running
       // (another window) keeps its file locked: then this one gets a name of its own.
@@ -165,6 +171,7 @@ export async function runUpdate(current: string): Promise<number> {
       chmodSync(`${target}.new`, 0o755);
       renameSync(`${target}.new`, target);
     }
+    ensureShortName(target);
     ok = true;
     if (panel) await panel.finish();
     else ui.print(`  ${green("✔")} ${t("asc-payout updated: {from} → {to}", { from: current, to })}`);
@@ -189,16 +196,20 @@ function oldName(target: string): string {
 /** Removes the previous .exe files left behind by updates on Windows; locked ones wait for a later start. */
 export function cleanUpAfterUpdate(): void {
   if (!isCompiled()) return;
-  const name = basename(process.execPath);
+  const main = mainExecutable();
+  const dir = dirname(main);
+  const names = [basename(main), `${SHORT}${process.platform === "win32" ? ".exe" : ""}`];
   let files: string[] = [];
   try {
-    files = readdirSync(dirname(process.execPath)).filter((f) => f === `${name}.old` || f.startsWith(`${name}.old-`));
+    files = readdirSync(dir).filter((f) => names.some((n) => f === `${n}.old` || f.startsWith(`${n}.old-`)));
   } catch {
     return;
   }
+  // the short name `ascp` next to it, and current (quietly: nothing happens if it can't)
+  ensureShortName(main);
   for (const f of files) {
     try {
-      rmSync(join(dirname(process.execPath), f), { force: true });
+      rmSync(join(dir, f), { force: true });
     } catch {
       // still in use (another window, or the version that just updated is closing)
     }

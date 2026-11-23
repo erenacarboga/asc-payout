@@ -15,6 +15,8 @@ If the asc-payout MCP tools are available (`get_month`, `get_history`, `get_subs
 asc-payout --version
 ```
 
+(`ascp` is the same program under a short name; use `asc-payout` in commands.)
+
 If the command is missing, install it (it puts `asc-payout` on PATH; a new terminal may be needed):
 
 - macOS / Linux: `curl -fsSL https://raw.githubusercontent.com/erenacarboga/asc-payout/main/install.sh | bash`

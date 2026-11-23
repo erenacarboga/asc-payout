@@ -29,7 +29,7 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/install.ps1 | iex
 ```
 
-Kurulum `asc-payout` komutunu PATH'e ekler: Windows'ta kullanıcı PATH'ine, macOS ve Linux'ta kabuğun ayar dosyasına (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` veya fish) bir satır yazarak. `ASC_PAYOUT_NO_MODIFY_PATH=1` verilirse PATH'e dokunmaz. Sonra yeni bir terminal açıp `asc-payout` yazmanız yeterli.
+Kurulum `asc-payout` komutunu PATH'e ekler: Windows'ta kullanıcı PATH'ine, macOS ve Linux'ta kabuğun ayar dosyasına (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` veya fish) bir satır yazarak. `ASC_PAYOUT_NO_MODIFY_PATH=1` verilirse PATH'e dokunmaz. Sonra yeni bir terminal açıp `asc-payout` ya da kısaca `ascp` yazmanız yeterli (ikisi aynı program).
 
 **Güncellemeler:** yeni bir sürüm çıktığında `asc-payout` açılırken şimdi güncellenip güncellenmeyeceğini sorar (evet, şimdi değil veya bu sürümü atla); evet derseniz kendini günceller, indirilenin SHA-256'sını kontrol eder ve yeni sürümle yeniden açılır. `asc-payout update` aynısını sormadan yapar; kurulum komutunu tekrar çalıştırmak da olur. Betiklerde, `--json`, `--csv` ve `watch` ile hiç sorulmaz (`ASC_PAYOUT_NO_UPDATE_CHECK=1` kontrolü kapatır).
 
@@ -50,7 +50,7 @@ Tek anahtar yeterlidir: uygulama adları uygulama listesinden gelir, uygulama i�
 
 ## Kullanım
 
-`asc-payout` yazın. Bir menü açılır; aracın yapabildiği her şey içindedir, parametre bilmeye gerek yoktur: bu ay, geçen ay, başka bir ay, geçmiş, abonelikler, iadeler ve iptaller, Apple Ads sonrası kâr, dosyaya aktarma (Excel için CSV), hesap seçimi, ayarlar (hesaplar, para birimi, aylık hedefler, Apple Ads, dil, bildirimler, güncellemeler) ve kurulum kontrolü.
+`asc-payout` (veya `ascp`) yazın. Bir menü açılır; aracın yapabildiği her şey içindedir, parametre bilmeye gerek yoktur: bu ay, geçen ay, başka bir ay, geçmiş, abonelikler, iadeler ve iptaller, Apple Ads sonrası kâr, dosyaya aktarma (Excel için CSV), hesap seçimi, ayarlar (hesaplar, para birimi, aylık hedefler, Apple Ads, dil, bildirimler, güncellemeler) ve kurulum kontrolü.
 
 Ok tuşları ve Enter ya da öğenin önündeki harf. **Esc** her yerde bir adım geri götürür; hesap eklerken de. Bir ay ekranındayken: **← →** önceki/sonraki ay, **↑ ↓** başka hesap, **c** ülkeler, **d** bir uygulamanın ayrıntıları, **p** Apple Ads sonrası kâr, **r** yeniden indir, **e** CSV olarak kaydet, **b** geri, **q** çıkış.
 

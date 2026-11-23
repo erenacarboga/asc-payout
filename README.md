@@ -58,7 +58,7 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/install.ps1 | iex
 ```
 
-Builds for Windows (x64, ARM64), macOS (Apple silicon, Intel) and Linux (x64, arm64, and musl for Alpine). The installer checks the SHA-256 of the download and puts `asc-payout` on your PATH: on Windows in your user PATH, on macOS and Linux by adding one line to your shell's startup file (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` or fish config). `ASC_PAYOUT_NO_MODIFY_PATH=1` leaves PATH alone. Open a new terminal afterwards and type `asc-payout`.
+Builds for Windows (x64, ARM64), macOS (Apple silicon, Intel) and Linux (x64, arm64, and musl for Alpine). The installer checks the SHA-256 of the download and puts `asc-payout` on your PATH: on Windows in your user PATH, on macOS and Linux by adding one line to your shell's startup file (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` or fish config). `ASC_PAYOUT_NO_MODIFY_PATH=1` leaves PATH alone. Open a new terminal afterwards and type `asc-payout`, or the short name `ascp` (the same program).
 
 **Updates:** when a new version is out, `asc-payout` asks on start whether to update now (yes, not now, or skip this version); on yes it updates itself, checks the download's SHA-256, and opens again on the new version. `asc-payout update` does the same without asking, and running the installer again works too. Scripts, `--json`, `--csv` and `watch` are never asked (`ASC_PAYOUT_NO_UPDATE_CHECK=1` turns the check off).
 
@@ -80,10 +80,10 @@ One key is enough: app names come from your app list, and in-app purchases are m
 
 ## Use
 
-Type `asc-payout`. A menu opens; everything the tool can do is in it, no options to learn:
+Type `asc-payout` (or `ascp`). A menu opens; everything the tool can do is in it, no options to learn:
 
 ```
-  asc-payout 1.8.0   All accounts  ·  USD
+  asc-payout 1.8.1   All accounts  ·  USD
 
 ? What would you like to see?
   t This month so far           November 2026  ·  Nov 1 - Nov 28, 2026  ·  running

@@ -125,7 +125,7 @@ export function parseArgs(argv: string[]): Args {
 export const HELP = `
 asc-payout - what Apple will pay you, per Apple fiscal month
 
-Usage
+Usage (ascp is the same program, shorter to type)
   asc-payout                       pick an account and a month
   asc-payout -a <account> -m <YYYY-MM>
   asc-payout history               the last 12 months, with the biggest apps

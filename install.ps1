@@ -48,7 +48,15 @@
 
         New-Item -ItemType Directory -Force -Path $binDir | Out-Null
         $exe = Join-Path $binDir "asc-payout.exe"
+        # A running asc-payout (or ascp) can be renamed, not overwritten
+        if (Test-Path $exe) { Move-Item $exe "$exe.old-$([DateTimeOffset]::Now.ToUnixTimeMilliseconds())" -Force }
         Copy-Item (Join-Path $work $asset) $exe -Force
+
+        # The short name: ascp.exe is the same file (a hard link), so it takes no space
+        $short = Join-Path $binDir "ascp.exe"
+        # only an earlier asc-payout is moved aside (another program's ascp prints something else)
+        if ((Test-Path $short) -and ((& $short --version 2>$null) -match '^\d+\.\d+\.\d+$')) { Move-Item $short "$short.old-$([DateTimeOffset]::Now.ToUnixTimeMilliseconds())" -Force -ErrorAction SilentlyContinue }
+        if (-not (Test-Path $short)) { New-Item -ItemType HardLink -Path $short -Target $exe -ErrorAction SilentlyContinue | Out-Null }
 
         $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
         if (-not $userPath) { $userPath = "" }
@@ -57,7 +65,7 @@
             $env:Path = "$env:Path;$binDir"
             Write-Host "Added $binDir to your PATH (new terminals will find asc-payout)."
         }
-        Write-Host "Installed $(& $exe --version) to $exe"
+        Write-Host "Installed $(& $exe --version) to $exe (also: ascp)"
         Write-Host "Next: asc-payout setup    (or try: asc-payout demo)"
     }
     finally {
