@@ -159,6 +159,7 @@ Environment
   ASC_PAYOUT_VENDOR, ASC_PAYOUT_ISSUER_ID, ASC_PAYOUT_KEY_ID, ASC_PAYOUT_KEY_FILE
                          use this account instead of the configured ones
   ASC_PAYOUT_CURRENCY    default display currency
+  ASC_PAYOUT_LANG=en|tr  language of the screens (default: the system's)
   ASC_PAYOUT_CONFIG_DIR, ASC_PAYOUT_CACHE_DIR
                          where settings and downloaded reports are kept
   ASC_PAYOUT_NOTIFY=off   watch: print only, no desktop notification

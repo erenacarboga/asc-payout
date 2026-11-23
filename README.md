@@ -219,6 +219,43 @@ Picked from the menus, the month stays on screen: **← →** go to the previous
 
 For scripts and CI, an account can come from environment variables instead of setup: `ASC_PAYOUT_VENDOR`, `ASC_PAYOUT_ISSUER_ID`, `ASC_PAYOUT_KEY_ID`, `ASC_PAYOUT_KEY_FILE` (and optionally `ASC_PAYOUT_CURRENCY`).
 
+## Use it from an AI assistant
+
+The repository ships an [Agent Skill](skills/asc-payout/SKILL.md) that teaches coding assistants to answer questions like *"what will Apple pay me for October?"*, *"which app had the most refunds this month?"* or *"is Apple Ads paying off?"* by running `asc-payout` with `--json` and reading the result correctly (fiscal months, Reports vs Trends, estimates vs final figures). It never reads or prints your keys.
+
+**Claude Code**, as a plugin:
+
+```
+/plugin marketplace add erenacarboga/asc-payout
+/plugin install asc-payout@asc-payout
+```
+
+**VS Code (GitHub Copilot), Cursor, Codex and other tools that read Agent Skills:** copy the `skills/asc-payout` folder into the tool's skills folder:
+
+| Tool | Folder (all projects) | Folder (one project) |
+|---|---|---|
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
+| VS Code (GitHub Copilot) | `~/.copilot/skills/` | `.github/skills/` |
+| Codex, Cursor | `~/.agents/skills/` | `.agents/skills/` |
+
+For example, for VS Code on macOS or Linux:
+
+```bash
+mkdir -p ~/.copilot/skills/asc-payout/references
+curl -fsSL https://raw.githubusercontent.com/erenacarboga/asc-payout/main/skills/asc-payout/SKILL.md -o ~/.copilot/skills/asc-payout/SKILL.md
+curl -fsSL https://raw.githubusercontent.com/erenacarboga/asc-payout/main/skills/asc-payout/references/json-output.md -o ~/.copilot/skills/asc-payout/references/json-output.md
+```
+
+and on Windows (PowerShell):
+
+```powershell
+$d = "$HOME\.copilot\skills\asc-payout"; New-Item -ItemType Directory -Force "$d\references" | Out-Null
+irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/skills/asc-payout/SKILL.md -OutFile "$d\SKILL.md"
+irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/skills/asc-payout/references/json-output.md -OutFile "$d\references\json-output.md"
+```
+
+Then ask in plain words. Account setup stays with you: run `asc-payout setup` once in your own terminal.
+
 ## How the numbers are made
 
 - **Fiscal months.** Apple's fiscal year ends on the last Saturday of September; quarters are 5, 4 and 4 weeks, and a 53-week year adds its extra week to December. When the Financial Report exists, its own dates are used.

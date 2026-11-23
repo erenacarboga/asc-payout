@@ -110,6 +110,43 @@ Bir sorun olursa `asc-payout doctor` saati, anahtarları, her rapora erişimi, a
 
 Bir şey yüklenirken ekranda hangi adımda olduğunu, günlük raporlar için ilerlemeyi ve geçen süreyi gösteren canlı bir satır görünür; iş bitince silinir.
 
+## Yapay zekâ asistanından kullanma
+
+Depoda bir [Agent Skill](skills/asc-payout/SKILL.md) var. Kodlama asistanlarına *"Apple Ekim için bana ne kadar ödeyecek?"*, *"bu ay en çok iade hangi uygulamada?"* veya *"Apple Ads kâr ettiriyor mu?"* gibi soruları `asc-payout`'u `--json` ile çalıştırıp sonucu doğru okuyarak (mali aylar, Raporlar ve Trendler, tahmin ve kesin rakam farkı) cevaplamayı öğretir. Anahtarlarınızı asla okumaz ve göstermez.
+
+**Claude Code**, eklenti olarak:
+
+```
+/plugin marketplace add erenacarboga/asc-payout
+/plugin install asc-payout@asc-payout
+```
+
+**VS Code (GitHub Copilot), Cursor, Codex ve Agent Skills okuyan diğer araçlar:** `skills/asc-payout` klasörünü aracın skill klasörüne kopyalayın:
+
+| Araç | Klasör (tüm projeler) | Klasör (tek proje) |
+|---|---|---|
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
+| VS Code (GitHub Copilot) | `~/.copilot/skills/` | `.github/skills/` |
+| Codex, Cursor | `~/.agents/skills/` | `.agents/skills/` |
+
+Örneğin Windows'ta VS Code için (PowerShell):
+
+```powershell
+$d = "$HOME\.copilot\skills\asc-payout"; New-Item -ItemType Directory -Force "$d\references" | Out-Null
+irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/skills/asc-payout/SKILL.md -OutFile "$d\SKILL.md"
+irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/skills/asc-payout/references/json-output.md -OutFile "$d\references\json-output.md"
+```
+
+macOS ve Linux'ta:
+
+```bash
+mkdir -p ~/.copilot/skills/asc-payout/references
+curl -fsSL https://raw.githubusercontent.com/erenacarboga/asc-payout/main/skills/asc-payout/SKILL.md -o ~/.copilot/skills/asc-payout/SKILL.md
+curl -fsSL https://raw.githubusercontent.com/erenacarboga/asc-payout/main/skills/asc-payout/references/json-output.md -o ~/.copilot/skills/asc-payout/references/json-output.md
+```
+
+Sonra normal cümlelerle sorun. Hesap kurulumu size kalır: kendi terminalinizde bir kez `asc-payout setup` çalıştırın.
+
 ## Hesaplama
 
 - **Mali ay**: Apple'ın mali yılı Eylül'ün son cumartesi biter; çeyrekler 5, 4 ve 4 haftadır, 53 haftalık yıllarda fazla hafta Aralık'a eklenir. Financial Report varsa tarihler rapordan alınır.

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- An Agent Skill (`skills/asc-payout`) so AI coding assistants can answer earnings questions by running asc-payout: a Claude Code plugin (`/plugin marketplace add erenacarboga/asc-payout`), and a folder to copy for VS Code (GitHub Copilot), Cursor and Codex. With a field-by-field reference of every `--json` output.
+- `--help` lists `ASC_PAYOUT_LANG`.
+- CI: the macOS check runs on its own (Intel Mac), so a long wait for a Mac runner no longer fails the main checks.
+
 ## 1.6.1
 
 - On start, when a new version is out, asc-payout asks whether to update now (yes, not now, or skip this version). On yes it updates itself and opens again on the new version. Not asked in scripts, with `--json`, `--csv` or `watch`, or with `ASC_PAYOUT_NO_UPDATE_CHECK=1`.

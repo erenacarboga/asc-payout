@@ -1,0 +1,26 @@
+name: macOS
+
+# The same checks on macOS, apart from CI: hosted Mac runners are sometimes scarce, and a
+# job that waits too long must not mark the main checks as failed. Intel Macs are used
+# because they are usually free sooner; nothing in the code depends on the processor.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Check (macOS Intel)
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+      - name: Build and smoke test
+        run: |
+          bun run build
+          ./bin/asc-payout --version
+          ./bin/asc-payout demo --account all --month 2026-10 > /dev/null

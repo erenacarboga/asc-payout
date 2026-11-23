@@ -1,0 +1,17 @@
+{
+  "name": "asc-payout",
+  "owner": {
+    "name": "erenacarboga",
+    "url": "https://github.com/erenacarboga"
+  },
+  "description": "asc-payout: App Store earnings, subscriptions, refunds and Apple Ads profit from your own App Store Connect data.",
+  "plugins": [
+    {
+      "name": "asc-payout",
+      "source": "./",
+      "description": "Answers questions about App Store earnings, payouts, subscriptions, refunds and Apple Ads profit by running the asc-payout CLI.",
+      "category": "productivity",
+      "tags": ["app-store", "app-store-connect", "earnings", "subscriptions", "apple-ads"]
+    }
+  ]
+}

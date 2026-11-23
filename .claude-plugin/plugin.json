@@ -1,0 +1,13 @@
+{
+  "name": "asc-payout",
+  "version": "1.6.1",
+  "description": "Answers questions about App Store earnings, payouts, subscriptions, refunds and Apple Ads profit by running the asc-payout CLI.",
+  "author": {
+    "name": "erenacarboga",
+    "url": "https://github.com/erenacarboga"
+  },
+  "homepage": "https://github.com/erenacarboga/asc-payout",
+  "repository": "https://github.com/erenacarboga/asc-payout",
+  "license": "MIT",
+  "keywords": ["app-store", "app-store-connect", "earnings", "payout", "subscriptions", "mrr", "apple-ads"]
+}
