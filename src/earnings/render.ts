@@ -85,14 +85,19 @@ export function renderMonth(r: MonthResult, options: RenderOptions = {}): string
     trends: "from Trends",
     "trends-so-far": "Trends so far, month not complete",
   }[p.basis];
-  const when = p.paid ? `paid around ${shortDate(p.date)}` : `expected around ${shortDate(p.date)}`;
-  out.push(bold(`  Payment   ~${m(p.amount)}  ·  ${when}`) + dim(`  (${basis})`));
+  if (Math.abs(p.amount) < 0.005 && (p.basis === "reports" || p.basis === "trends")) {
+    out.push(bold(`  Payment   ${m(0)}`) + dim("  ·  nothing to pay for this month"));
+  } else {
+    const when = p.paid ? `paid around ${shortDate(p.date)}` : `expected around ${shortDate(p.date)}`;
+    out.push(bold(`  Payment   ~${m(p.amount)}  ·  ${when}`) + dim(`  (${basis})`));
+  }
 
   // Reports
   const reportsLine = {
     ok: "Apple Financial Report, the final figures.",
     "in-progress": "not available until the month ends.",
     "not-published": "not published yet; Apple usually publishes it in the first week after the month ends.",
+    none: "no Financial Report for this month: nothing was settled.",
     "no-access": `this API key can't read Financial Reports. Give it the Finance role.`,
     failed: `could not be downloaded: ${r.reports.message}`,
   }[r.reports.status];

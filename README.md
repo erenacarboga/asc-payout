@@ -88,6 +88,31 @@ One key is enough: app names come from your app list, and in-app purchases are m
 
 ## Use
 
+Type `asc-payout`. A menu opens; everything the tool can do is in it, no options to learn:
+
+```
+  asc-payout 1.5.0   All accounts  ·  USD
+
+? What would you like to see?
+  t This month so far  November 2026  ·  Nov 1 - Nov 28, 2026  ·  running
+❯ l Last month         October 2026  ·  Sep 27 - Oct 31, 2026
+  m Another month…
+  h History…           months side by side, top apps
+  s Subscriptions…     paying, trials, MRR, cancellations
+  e Export to a file…  CSV for Excel, Numbers, Google Sheets
+  a Account            All accounts
+  o Settings           accounts, currency, notifications, updates
+  d Check my setup     keys, access, clock, network
+  q Quit
+  ↑↓ move · enter select · q quit
+```
+
+Arrow keys and Enter, or the letter in front of an item. **Esc** always goes back one step, in menus and while setting up an account. On a month: **← →** previous / next month, **↑ ↓** another account, **c** countries, **r** download again, **e** save as CSV, **b** back, **q** quit.
+
+### Options, for scripts
+
+The same things without the menu:
+
 ```
 asc-payout                          choose account and month (defaults: last account, last closed month)
 asc-payout -a personal -m 2026-10   no questions; a part of the account name is enough

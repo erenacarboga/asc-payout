@@ -54,6 +54,12 @@ Tek anahtar yeterlidir: uygulama adları uygulama listesinden gelir, uygulama i�
 
 ## Kullanım
 
+`asc-payout` yazın. Bir menü açılır; aracın yapabildiği her şey içindedir, parametre bilmeye gerek yoktur: bu ay, geçen ay, başka bir ay, geçmiş, abonelikler, dosyaya aktarma (Excel için CSV), hesap seçimi, ayarlar (hesaplar, para birimi, bildirimler, güncellemeler) ve kurulum kontrolü.
+
+Ok tuşları ve Enter ya da öğenin önündeki harf. **Esc** her yerde bir adım geri götürür; hesap eklerken de. Bir ay ekranındayken: **← →** önceki/sonraki ay, **↑ ↓** başka hesap, **c** ülkeler, **r** yeniden indir, **e** CSV olarak kaydet, **b** geri, **q** çıkış.
+
+Betikler için aynı şeyler parametrelerle de yapılabilir:
+
 ```
 asc-payout                          hesap ve ay sorulur (varsayılan: son hesap, son kapanan ay)
 asc-payout -a bireysel -m 2026-10   soru sormaz; hesap adının bir parçası yeterli

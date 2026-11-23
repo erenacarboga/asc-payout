@@ -60,7 +60,8 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
     }
   }
   const longClosed = toMs(period.end) < Date.now() - PUBLISHED_WITHIN_DAYS * DAY_MS;
-  const skipTrends = opts.trends === "when-needed" && (financial !== null || (reportsStatus === "not-published" && longClosed));
+  if (reportsStatus === "not-published" && longClosed) reportsStatus = "none";
+  const skipTrends = opts.trends === "when-needed" && (financial !== null || reportsStatus === "none");
 
   // 2) Trends: one daily Sales report per day of the period, up to today
   const lastDay = period.end < now ? period.end : now;

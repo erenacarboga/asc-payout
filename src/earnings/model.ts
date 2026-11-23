@@ -15,7 +15,7 @@ export interface AppGroup extends Line {
   items: Line[];
 }
 
-export type ReportsStatus = "ok" | "in-progress" | "not-published" | "no-access" | "failed";
+export type ReportsStatus = "ok" | "in-progress" | "not-published" | "none" | "no-access" | "failed";
 
 export interface MonthResult {
   account: { name: string; vendor: string };

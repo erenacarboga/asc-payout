@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0
+
+- A home menu: `asc-payout` opens a menu with everything the tool does (this month, last month, any month, history, subscriptions, export, account, settings, check setup), so no option has to be learned.
+- Esc goes back one step everywhere, and every menu has a "← Back" entry; on a month screen **b** goes back to the menu and **q** quits.
+- Account setup is a form: the fields filled in so far, the current step, and Esc to go back without losing what was typed. Before saving, the key and vendor number are checked; on a problem you can go back and fix it.
+- Settings: accounts (change, check access, remove), currency, notifications (check now, turn a daily check on or off: Task Scheduler, launchd or cron), check for updates, refresh app names, where files are kept.
+- Export to CSV from the menu (a month, the last 12 months, a year, subscriptions), or with **e** on a month; files go to the Downloads folder.
+- First run without an account: set one up, or look around with demo data.
+- A month with nothing to pay says so, and a long-closed month without a Financial Report says nothing was settled.
+- Key presses on the month screen work reliably on Windows (the second key press was lost before).
+
 ## 1.4.1
 
 - Builds for Windows ARM64 and musl Linux (Alpine); the installers pick them automatically.
