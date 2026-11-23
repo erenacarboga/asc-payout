@@ -1,21 +1,19 @@
 /**
  * The loading line shown on stderr while reports download:
  *
- *   ⠹  Trends · daily sales reports   ━━━━━━━━━━━━━╸━━━━━━━━━━   21/35   2.4s
- *   ⠼  Downloading asc-payout 1.7.2   ━━━━━━━━╸━━━━━━━━━━━━━━━   38.2 / 110.4 MB · 9.1 MB/s · 8s left   4.2s
+ *   ⠹  Trends · daily sales reports   ████████████████▌───────────   21/35   2.4s
  *
- * An animated spinner in a moving color, the current step, a progress bar when the
- * step has a count, and the time so far. It redraws one line in place and erases it
+ * A spinner turning through a color gradient, the current step, a smooth gradient bar
+ * with a moving shine when the step has a count (or megabytes, speed and time left for
+ * a download), and the time so far. It redraws one line in place and erases it
  * when done, so only the results stay on screen. Off when stderr is not a terminal,
  * and with ASC_PAYOUT_NO_SPINNER=1.
  */
 
 import { t } from "../i18n";
+import { bold, dim, mb, smoothBar, spinnerFrame, visibleLength } from "./look";
 
-const FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-// a slow cycle through cyan, blue and magenta (256-color codes)
-const HUES = [51, 45, 39, 33, 63, 99, 135, 171, 135, 99, 63, 33, 39, 45];
-const BAR = 24;
+const BAR = 28;
 
 export interface Spinner {
   /** what is happening now */
@@ -44,8 +42,6 @@ export function redrawLoadingLine(): void {
 export function startSpinner(stream: NodeJS.WriteStream = process.stderr): Spinner {
   if (!stream.isTTY || process.env.ASC_PAYOUT_NO_SPINNER) return NOOP;
   const color = !process.env.NO_COLOR;
-  const paint = (code: number, s: string) => (color ? `\x1b[38;5;${code}m${s}\x1b[39m` : s);
-  const dim = (s: string) => (color ? `\x1b[2m${s}\x1b[22m` : s);
 
   const started = Date.now();
   let stepStarted = started;
@@ -58,31 +54,23 @@ export function startSpinner(stream: NodeJS.WriteStream = process.stderr): Spinn
 
   const render = () => {
     if (stopped) return;
-    const frame = paint(HUES[Math.floor(tick / 2) % HUES.length], FRAMES[tick % FRAMES.length]);
-    let bar = "";
+    const frame = spinnerFrame(tick, color);
+    let tail = "";
     if (unit === "bytes") {
-      const mb = (n: number) => (n / 1048576).toFixed(1);
       const secs = (Date.now() - stepStarted) / 1000;
       const speed = secs > 0.5 ? done / secs : 0;
       const parts = [total > 0 ? `${mb(done)} / ${mb(total)} MB` : `${mb(done)} MB`];
       if (speed > 0) parts.push(`${mb(speed)} MB/s`);
       if (speed > 0 && total > done) parts.push(t("{s}s left", { s: Math.max(1, Math.round((total - done) / speed)) }));
-      const filled = total > 0 ? Math.min(BAR, (done / total) * BAR) : 0;
-      const whole = Math.floor(filled);
-      const head = total > 0 && whole < BAR ? (filled - whole >= 0.5 ? "╸" : "") : "";
-      const rest = BAR - whole - (head ? 1 : 0);
-      bar = `${total > 0 ? `   ${paint(HUES[(Math.floor(tick / 2) + 4) % HUES.length], "━".repeat(whole) + head)}${dim("━".repeat(Math.max(0, rest)))}` : ""}   ${parts.join(dim(" · "))}`;
+      const percent = total > 0 ? `  ${bold(`${Math.floor((done / total) * 100)}%`.padStart(4), color)}` : "";
+      tail = `${total > 0 ? `   ${smoothBar(done / total, BAR, tick, color)}${percent}` : ""}   ${parts.join(dim(" · ", color))}`;
     } else if (total > 0) {
-      const filled = Math.min(BAR, (done / total) * BAR);
-      const whole = Math.floor(filled);
-      const head = whole < BAR ? (filled - whole >= 0.5 ? "╸" : "") : "";
-      const rest = BAR - whole - (head ? 1 : 0);
-      bar = `   ${paint(HUES[(Math.floor(tick / 2) + 4) % HUES.length], "━".repeat(whole) + head)}${dim("━".repeat(Math.max(0, rest)))}   ${done}/${total}${unit ? ` ${unit}` : ""}`;
+      tail = `   ${smoothBar(done / total, BAR, tick, color)}   ${done}/${total}${unit ? ` ${unit}` : ""}`;
     }
-    const seconds = dim(`${((Date.now() - started) / 1000).toFixed(1)}s`);
+    const seconds = dim(`${((Date.now() - started) / 1000).toFixed(1)}s`, color);
     const width = stream.columns || 80;
     // keep it on one line even in a narrow window
-    let line = `  ${frame}  ${message}${bar}   ${seconds}`;
+    let line = `  ${frame}  ${message}${tail}   ${seconds}`;
     if (visibleLength(line) > width - 1) {
       const count = !total ? "" : unit === "bytes" ? `  ${Math.floor((done / total) * 100)}%` : `  ${done}/${total}`;
       line = `  ${frame}  ${message.slice(0, Math.max(10, width - 30))}${count}`;
@@ -158,7 +146,3 @@ export async function withSpinner<T>(message: string, work: (spinner: Spinner) =
   }
 }
 
-function visibleLength(s: string): number {
-  // eslint-disable-next-line no-control-regex
-  return s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").length;
-}

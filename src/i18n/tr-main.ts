@@ -160,4 +160,13 @@ export const TR_MAIN: Record<string, string> = {
   "Reading app names": "Uygulama adları okunuyor",
   "asc-payout updated: {from} → {to}": "asc-payout güncellendi: {from} → {to}",
   "{s}s left": "{s} sn kaldı",
+  "Release found": "Sürüm bulundu",
+  "Downloading": "İndiriliyor",
+  "Checking the download (SHA-256)": "İndirilen dosya doğrulanıyor (SHA-256)",
+  "asc-payout {version} is ready": "asc-payout {version} hazır",
+  "{size} MB in {seconds}s": "{size} MB, {seconds} sn",
+  "checksum verified": "doğrulandı",
+  Downloaded: "İndirildi",
+  "Checked (SHA-256)": "Doğrulandı (SHA-256)",
+  Installed: "Kuruldu",
 };

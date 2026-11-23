@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.3
+
+- Updating is a live panel: the versions, each step with its state (found, downloading, checked with SHA-256, installed), a smooth progress bar with the percentage, megabytes, speed with a small speed graph, and time left. It ends with a short finish line: the new version, size, time, and that the checksum was verified.
+- The loading line has a smooth gradient bar that fills in eighths of a character, with a shine moving across it, and a spinner that changes color as it turns. Truecolor where the terminal has it, 256 colors otherwise, plain characters with `NO_COLOR`.
+
 ## 1.7.2
 
 - Updating shows a live progress line: megabytes downloaded, speed and time left, then checking the download and installing, and ends with "asc-payout updated: 1.7.1 → 1.7.2". The download no longer stops after two minutes on a slow connection; it only gives up when no data arrives for 30 seconds.

@@ -5,7 +5,8 @@ import { basename, dirname, join } from "node:path";
 import { readJson, writeFileAtomic } from "../config/files";
 import { cacheDir } from "../config/paths";
 import { t } from "../i18n";
-import { startSpinner, withSpinner, type Spinner } from "./spinner";
+import { withSpinner } from "./spinner";
+import { startUpdatePanel } from "./update-panel";
 import { ui } from "./ui";
 
 export const REPO = "erenacarboga/asc-payout";
@@ -104,16 +105,15 @@ async function fetchFile(url: string, path: string, onBytes?: (done: number, tot
   }
 }
 
-async function download(tag: string, asset: string, dir: string, spinner: Spinner): Promise<void> {
+async function download(tag: string, asset: string, dir: string, onBytes: (done: number, total: number) => void): Promise<void> {
   const base = `https://github.com/${REPO}/releases/download/${tag}`;
   try {
     await fetchFile(`${base}/SHA256SUMS`, join(dir, "SHA256SUMS"));
-    await fetchFile(`${base}/${asset}`, join(dir, asset), (done, total) => spinner.progress(done, total, "bytes"));
+    await fetchFile(`${base}/${asset}`, join(dir, asset), onBytes);
     return;
   } catch {
     // blocked (a proxy, for example): try the GitHub CLI if it is installed
   }
-  spinner.text(t("Downloading with the GitHub CLI"));
   const args = ["release", "download", tag, "-R", REPO, "-D", dir, "--clobber", "-p", asset, "-p", "SHA256SUMS"];
   if (!gh(args).ok) throw new Error(t("Download failed. Check your internet connection and try again."));
 }
@@ -134,19 +134,20 @@ export async function runUpdate(current: string): Promise<number> {
 
   const to = latest.replace(/^v/, "");
   const dir = mkdtempSync(join(tmpdir(), "asc-payout-update-"));
-  const spinner = startSpinner();
-  // without a terminal (scripts, logs) a plain line says what is going on
-  if (!process.stderr.isTTY) ui.print(`  ${t("Updating {from} -> {to}...", { from: current, to })}`);
+  // a live panel on a terminal; plain lines for scripts and logs
+  const panel = startUpdatePanel(current, to);
+  if (!panel) ui.print(`  ${t("Updating {from} -> {to}...", { from: current, to })}`);
+  let ok = false;
   try {
-    spinner.text(t("Downloading asc-payout {version}", { version: to }));
-    await download(latest, asset, dir, spinner);
-    spinner.text(t("Checking the download"));
+    panel?.step(1);
+    await download(latest, asset, dir, (done, total) => panel?.bytes(done, total));
+    panel?.step(2);
     const sums = readFileSync(join(dir, "SHA256SUMS"), "utf-8");
     const want = sums.split("\n").map((l) => l.trim().split(/\s+\*?/)).find((p) => p[1] === asset)?.[0];
     const have = createHash("sha256").update(readFileSync(join(dir, asset))).digest("hex");
     if (!want || want.toLowerCase() !== have) throw new Error(t("Checksum does not match; nothing was changed."));
 
-    spinner.text(t("Installing"));
+    panel?.step(3);
     const target = process.execPath;
     if (process.platform === "win32") {
       // A running .exe can be renamed but not overwritten. An older copy still running
@@ -164,11 +165,12 @@ export async function runUpdate(current: string): Promise<number> {
       chmodSync(`${target}.new`, 0o755);
       renameSync(`${target}.new`, target);
     }
-    spinner.stop();
-    ui.print(`  ${green("✔")} ${t("asc-payout updated: {from} → {to}", { from: current, to })}`);
+    ok = true;
+    if (panel) await panel.finish();
+    else ui.print(`  ${green("✔")} ${t("asc-payout updated: {from} → {to}", { from: current, to })}`);
     return 0;
   } finally {
-    spinner.stop();
+    if (!ok) panel?.fail();
     rmSync(dir, { recursive: true, force: true });
   }
 }

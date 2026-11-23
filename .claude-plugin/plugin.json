@@ -1,6 +1,6 @@
 {
   "name": "asc-payout",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "Answers questions about App Store earnings, payouts, subscriptions, refunds and Apple Ads profit by running the asc-payout CLI.",
   "author": {
     "name": "erenacarboga",
