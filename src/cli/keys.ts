@@ -2,6 +2,7 @@ import { copyFileSync, existsSync, readdirSync, readFileSync, statSync } from "n
 import { homedir } from "node:os";
 import { basename, delimiter, join, resolve } from "node:path";
 import { ensureDir, keysDir } from "../config/paths";
+import { t } from "../i18n";
 
 const KEY_FILE = /^AuthKey_([A-Z0-9]{10})\.p8$/;
 
@@ -47,13 +48,13 @@ export const cleanPath = (value: string): string => value.trim().replace(/^["']|
 
 export function checkKeyFile(path: string): true | string {
   const p = cleanPath(path);
-  if (!p) return "Enter the path of the .p8 file";
-  if (!existsSync(p)) return `File not found: ${p}`;
+  if (!p) return t("Enter the path of the .p8 file");
+  if (!existsSync(p)) return t("File not found: {path}", { path: p });
   try {
     const text = readFileSync(p, "utf-8");
-    if (!text.includes("BEGIN PRIVATE KEY")) return "This doesn't look like an App Store Connect .p8 key";
+    if (!text.includes("BEGIN PRIVATE KEY")) return t("This doesn't look like an App Store Connect .p8 key");
   } catch {
-    return `Cannot read ${p}`;
+    return t("Cannot read {path}", { path: p });
   }
   return true;
 }

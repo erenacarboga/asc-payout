@@ -5,6 +5,7 @@ import { readJson, writeFileAtomic } from "../config/files";
 import { cacheDir } from "../config/paths";
 import type { Account } from "../config/settings";
 import { computeMonth } from "../earnings/month";
+import { t } from "../i18n";
 import { money } from "../money/format";
 import { ui } from "./ui";
 
@@ -22,12 +23,12 @@ export async function runWatch(accounts: Account[], currency: string): Promise<n
   for (const account of accounts) {
     const key = `${account.vendor}:${financeReportDate(ym)}`;
     if (told[key]) {
-      ui.print(`  ${account.name}: ${monthLabel(ym)} already announced.`);
+      ui.print(`  ${t("{account}: {month} already announced.", { account: account.name, month: monthLabel(ym) })}`);
       continue;
     }
     const report = await downloadFinancialReport(account, financeReportDate(ym), true);
     if (report.status === "not-published") {
-      ui.print(`  ${account.name}: ${monthLabel(ym)} not published yet.`);
+      ui.print(`  ${t("{account}: {month} not published yet.", { account: account.name, month: monthLabel(ym) })}`);
       continue;
     }
     if (report.status !== "ok") {
@@ -35,7 +36,7 @@ export async function runWatch(accounts: Account[], currency: string): Promise<n
       continue;
     }
     const r = await computeMonth(account, ym, { currency, useCache: true, refreshCatalog: false, log: () => {}, settlement: false });
-    const message = `${monthLabel(ym)} is final: ${money(r.payment.amount, currency)}, expected around ${shortDate(r.payment.date)}.`;
+    const message = t("{month} is final: {amount}, expected around {date}.", { month: monthLabel(ym), amount: money(r.payment.amount, currency), date: shortDate(r.payment.date) });
     ui.print(`  ${account.name}: ${message}`);
     notify(`asc-payout · ${account.name}`, message);
     told[key] = new Date().toISOString();

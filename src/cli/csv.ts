@@ -1,6 +1,8 @@
 import type { AccountHistory } from "../earnings/history";
 import type { MonthResult } from "../earnings/model";
 import type { SubscriptionsResult } from "../earnings/subscriptions";
+import type { ChurnResult } from "../earnings/churn";
+import type { ProfitResult } from "../earnings/profit";
 
 /** RFC 4180 CSV: quotes when needed, numbers with 2 decimals, "\r\n" line ends (Excel friendly). */
 export function toCsv(rows: (string | number | null | undefined)[][]): string {
@@ -47,6 +49,30 @@ export function subscriptionsCsv(results: SubscriptionsResult[]): string {
       const e = a.events;
       rows.push([r.account.name, r.asOf, a.app, a.paying, a.trials, a.billingIssues, a.mrr, r.currency, e.trialStarts, e.trialConversions, e.newPaid, e.renewals, e.cancellations, e.refunds, r.window.from, r.window.to]);
     }
+  }
+  return toCsv(rows);
+}
+
+export function churnCsv(results: ChurnResult[]): string {
+  const rows: (string | number | null)[][] = [[
+    "account", "from", "to", "app", "trial_starts", "trial_conversions", "new_paid", "cancellations", "units_sold", "units_refunded", "refund_amount", "currency",
+  ]];
+  for (const r of results) {
+    for (const a of r.apps) {
+      rows.push([r.account.name, r.window.from, r.window.to, a.app, a.trialStarts, a.conversions, a.newPaid, a.cancellations, a.sold, a.refunded, a.refundAmount, r.currency]);
+    }
+  }
+  return toCsv(rows);
+}
+
+export function profitCsv(r: ProfitResult): string {
+  const month = `${r.month.year}-${String(r.month.month).padStart(2, "0")}`;
+  const rows: (string | number | null)[][] = [["month", "app", "app_id", "account", "revenue", "ad_spend", "profit", "roas", "installs", "cost_per_install", "currency"]];
+  for (const a of r.apps) {
+    rows.push([
+      month, a.name, a.appId ?? null, a.account ?? null, a.revenue, a.spend, a.revenue === null ? null : a.revenue - a.spend,
+      a.revenue !== null && a.spend > 0 ? a.revenue / a.spend : null, a.installs, a.installs ? a.spend / a.installs : null, r.currency,
+    ]);
   }
   return toCsv(rows);
 }

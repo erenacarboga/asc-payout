@@ -1,5 +1,6 @@
 import { gunzipSync } from "node:zlib";
 import { readKeyFile, type ApiKey } from "../config/settings";
+import { t } from "../i18n";
 import { tokenFor } from "./token";
 
 const API = "https://api.appstoreconnect.apple.com";
@@ -29,11 +30,12 @@ function explain(status: number, detail: string, response: Response): string {
   if (status === 401) {
     const serverTime = Date.parse(response.headers.get("date") || "");
     const skew = Number.isNaN(serverTime) ? 0 : Math.round((Date.now() - serverTime) / 1000);
-    const clock = Math.abs(skew) > 60 ? ` This computer's clock is ${Math.abs(skew)} s ${skew > 0 ? "ahead" : "behind"}; sync it and try again.` : "";
-    return `The API key was rejected (401): check the Issuer ID, Key ID and .p8 file, and that the key was not revoked.${clock}`;
+    const off = skew > 0 ? t("This computer's clock is {n} s ahead; sync it and try again.", { n: Math.abs(skew) }) : t("This computer's clock is {n} s behind; sync it and try again.", { n: Math.abs(skew) });
+    const clock = Math.abs(skew) > 60 ? ` ${off}` : "";
+    return `${t("The API key was rejected (401): check the Issuer ID, Key ID and .p8 file, and that the key was not revoked.")}${clock}`;
   }
-  if (status === 403) return `This API key is not allowed to do this (403). ${detail}`.trim();
-  return `App Store Connect answered ${status}: ${detail}`;
+  if (status === 403) return `${t("This API key is not allowed to do this (403).")} ${detail}`.trim();
+  return t("App Store Connect answered {status}: {detail}", { status, detail });
 }
 
 /**

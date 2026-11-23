@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.0
+
+- **App details**: press **d** on a month and pick an app: its products, its day-by-day sales, refunds, and the countries it earns in.
+- **Refunds and cancellations** (`asc-payout churn`, or from the menu): per app, trials started and how many became paid, cancellations, refunds and the refund rate; trial conversion week by week; why people cancelled; billing problems and how many were recovered. `--days 7|30|90`, `--csv`, `--json`.
+- **Profit after Apple Ads** (`asc-payout profit`, from the menu, or **p** on a month): revenue, ad spend, profit, ROAS, installs and cost per install by app, for the same days. Connect Apple Ads in Settings: asc-payout can make the key pair for you and put the public key on the clipboard; the client, team and key IDs are checked with Apple before saving.
+- **Monthly goals** (Settings > Monthly goals): a goal per account and one for all accounts together, in any currency. The month screen shows a progress bar, and while the month is running, whether the forecast reaches it.
+- **Türkçe**: menus and screens in Turkish, with Turkish month names, dates and number formats. It follows the system language; change it in Settings > Language, or with `ASC_PAYOUT_LANG=en|tr`. `--json`, `--csv` and `--help` stay in English.
+- Export menu: refunds and cancellations as CSV.
+
 ## 1.5.0
 
 - A home menu: `asc-payout` opens a menu with everything the tool does (this month, last month, any month, history, subscriptions, export, account, settings, check setup), so no option has to be learned.

@@ -9,12 +9,16 @@
  * Sep 27 - Oct 31, 2026. All dates are YYYY-MM-DD strings computed in UTC.
  */
 
+import { lang } from "../i18n";
+
 const DAY = 86_400_000;
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_NAMES_TR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+const SHORT_MONTHS_TR = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
 
 export interface YearMonth {
   year: number;
@@ -68,11 +72,12 @@ export function financeReportDate(ym: YearMonth): string {
   return `${fiscalYearOf(ym)}-${String(fiscalMonthIndex(ym)).padStart(2, "0")}`;
 }
 
-export const monthLabel = (ym: YearMonth): string => `${MONTH_NAMES[ym.month - 1]} ${ym.year}`;
+export const monthLabel = (ym: YearMonth): string => `${(lang() === "tr" ? MONTH_NAMES_TR : MONTH_NAMES)[ym.month - 1]} ${ym.year}`;
 
-/** "2026-10-31" -> "Oct 31, 2026" (or "Oct 31") */
+/** "2026-10-31" -> "Oct 31, 2026" (or "Oct 31"); in Turkish "31 Eki 2026" */
 export function shortDate(date: string, withYear = true): string {
   const [y, m, d] = date.split("-").map(Number);
+  if (lang() === "tr") return `${d} ${SHORT_MONTHS_TR[m - 1]}${withYear ? ` ${y}` : ""}`;
   return `${SHORT_MONTHS[m - 1]} ${d}${withYear ? `, ${y}` : ""}`;
 }
 

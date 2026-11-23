@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { addDays, eachDay, fiscalPeriod, toMs, today, type YearMonth } from "../calendar/fiscal";
 import { forecastMonth, type AppGroup, type MonthResult } from "../earnings/model";
 
@@ -7,7 +8,7 @@ import { forecastMonth, type AppGroup, type MonthResult } from "../earnings/mode
  */
 const DEMO_ACCOUNTS: { name: string; vendor: string; apps: [string, [string, number, number][]][] }[] = [
   {
-    name: "Demo Studio",
+    name: "Account 1",
     vendor: "80000001",
     apps: [
       ["Photo Editor Pro", [["Pro Yearly", 599.99, 580.1], ["Pro Monthly", 247.23, 232.3]]],
@@ -16,7 +17,7 @@ const DEMO_ACCOUNTS: { name: string; vendor: string; apps: [string, [string, num
     ],
   },
   {
-    name: "Demo Personal",
+    name: "Account 2",
     vendor: "80000002",
     apps: [["Habit Streaks", [["Plus Weekly", 152.4, 148.85], ["Plus Lifetime", 39.99, 0]]]],
   },
@@ -50,7 +51,7 @@ export function demoResults(ym: YearMonth, currency: string): MonthResult[] {
   return DEMO_ACCOUNTS.map((account) => {
     const apps: AppGroup[] = account.apps.map(([name, items]) => {
       const lines = items.map(([item, reports, trends]) => ({ name: item, reports: running ? 0 : reports, trends: trends * share }));
-      return { name, items: lines, reports: lines.reduce((s, l) => s + l.reports, 0), trends: lines.reduce((s, l) => s + l.trends, 0) };
+      return { key: `app:${name}`, name, items: lines, reports: lines.reduce((s, l) => s + l.reports, 0), trends: lines.reduce((s, l) => s + l.trends, 0) };
     });
     const fullTrends = account.apps.flatMap(([, items]) => items).reduce((s, [, , t]) => s + t, 0);
     const trendsTotal = fullTrends * share;
@@ -63,7 +64,7 @@ export function demoResults(ym: YearMonth, currency: string): MonthResult[] {
     const countries = COUNTRY_SHARE.map(([code, part]) => ({ code, reports: (reportsTotal ?? 0) * part, trends: trendsTotal * part }));
     const earlier = reportsTotal === null ? 0 : reportsTotal * 0.09;
     return {
-      account: { name: account.name, vendor: account.vendor },
+      account: { name: t("Account {n}", { n: account.name.slice(-1) }), vendor: account.vendor },
       month: ym,
       period,
       currency,

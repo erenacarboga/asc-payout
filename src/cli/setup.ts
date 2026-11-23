@@ -4,11 +4,14 @@ import { loadCatalog } from "../asc/catalog";
 import { checkSalesAccess } from "../asc/reports";
 import { cacheDir, configDir, resolveKeyFile, settingsFile } from "../config/paths";
 import { accountFromEnv, loadSettings, saveSettings, type Account, type ApiKey, type Settings } from "../config/settings";
+import { LANGS, systemLang, t, type Lang } from "../i18n";
+import { money } from "../money/format";
 import { checkKeyFile, cleanPath, findKeyFiles, keyIdFromFileName, storeKeyFile } from "./keys";
 import { isDailyCheckOn, setDailyCheck } from "./schedule";
 import { startSpinner } from "./spinner";
 import { compareVersions, latestVersion, runUpdate } from "./update";
 import { runWatch } from "./watch";
+import { adsMenu } from "./ads-setup";
 import { BACK, QUIT, type Back } from "./prompts";
 import { ui } from "./ui";
 
@@ -66,11 +69,11 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
         return "skip";
       }
       const choice = await ui.pick<"keep" | "new" | ApiKey>({
-        message: "API key",
+        message: t("API key"),
         items: [
-          ...(current ? [{ label: "Keep the current key", value: "keep" as const, hint: current.key.keyId, key: "k" }] : []),
-          ...reusable.map((a) => ({ label: `Same key as ${a.name}`, value: a.key, hint: `${a.key.keyId} · same App Store Connect team` })),
-          { label: "A new API key", value: "new" as const, key: "n" },
+          ...(current ? [{ label: t("Keep the current key"), value: "keep" as const, hint: current.key.keyId, key: "k" }] : []),
+          ...reusable.map((a) => ({ label: t("Same key as {name}", { name: a.name }), value: a.key, hint: `${a.key.keyId} · ${t("same App Store Connect team")}` })),
+          { label: t("A new API key"), value: "new" as const, key: "n" },
         ],
       });
       if (choice === BACK || choice === QUIT) return BACK;
@@ -80,8 +83,8 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
     // 2. The .p8 file
     async (d) => {
       if (d.keyChoice !== "new") return "skip";
-      say(dim("App Store Connect > Users and Access > Integrations > App Store Connect API."));
-      say(dim("Use a key with the Finance role and download its .p8 file."));
+      say(dim(t("App Store Connect > Users and Access > Integrations > App Store Connect API.")));
+      say(dim(t("Use a key with the Finance role and download its .p8 file.")));
       say();
       for (;;) {
         const found = findKeyFiles();
@@ -89,10 +92,10 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
         if (found.length > 0) {
           const at = found.findIndex((f) => f.path === d.keyFile);
           const chosen = await ui.pick<string>({
-            message: "Key file",
+            message: t("Key file"),
             items: [
               ...found.slice(0, 8).map((f) => ({ label: f.path, value: f.path, hint: f.keyId })),
-              { label: "Another file…", value: "", key: "o" },
+              { label: t("Another file…"), value: "", key: "o" },
             ],
             start: Math.max(0, at),
           });
@@ -100,7 +103,7 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
           file = chosen;
         }
         if (file === "") {
-          file = await ui.ask({ message: "Path to the .p8 file", hint: "drag the file here or paste its path", prefill: d.keyFile, validate: checkKeyFile });
+          file = await ui.ask({ message: t("Path to the .p8 file"), hint: t("drag the file here or paste its path"), prefill: d.keyFile, validate: checkKeyFile });
           if (file === BACK) {
             if (found.length > 0) continue; // back to the list of files
             return BACK;
@@ -115,10 +118,10 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
       if (d.keyChoice !== "new") return "skip";
       const fromName = keyIdFromFileName(d.keyFile ?? "");
       const id = await ui.ask({
-        message: "Key ID",
+        message: t("Key ID"),
         default: d.keyId ?? fromName ?? undefined,
-        hint: fromName ? "read from the file name; enter to confirm" : "10 letters and digits, next to the key in App Store Connect",
-        validate: (v) => (KEY_ID.test(v.toUpperCase()) ? true : "10 letters and digits, e.g. ABCDE12345"),
+        hint: fromName ? t("read from the file name; enter to confirm") : t("10 letters and digits, next to the key in App Store Connect"),
+        validate: (v) => (KEY_ID.test(v.toUpperCase()) ? true : t("10 letters and digits, e.g. ABCDE12345")),
       });
       if (id === BACK) return BACK;
       d.keyId = id.toUpperCase();
@@ -128,10 +131,10 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
     async (d) => {
       if (d.keyChoice !== "new") return "skip";
       const issuer = await ui.ask({
-        message: "Issuer ID",
+        message: t("Issuer ID"),
         default: d.issuerId ?? others[0]?.key.issuerId ?? current?.key.issuerId,
-        hint: "shown above the list of keys",
-        validate: (v) => (UUID.test(v) ? true : "Looks like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"),
+        hint: t("shown above the list of keys"),
+        validate: (v) => (UUID.test(v) ? true : t("Looks like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")),
       });
       if (issuer === BACK) return BACK;
       d.issuerId = issuer;
@@ -140,12 +143,12 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
     // 5. Vendor number
     async (d) => {
       const vendor = await ui.ask({
-        message: "Vendor number",
+        message: t("Vendor number"),
         prefill: d.vendor ?? current?.vendor,
-        hint: "Payments and Financial Reports, top left (8-9 digits)",
+        hint: t("Payments and Financial Reports, top left (8-9 digits)"),
         validate: (v) => {
-          if (!/^\d{5,12}$/.test(v)) return "Digits only, e.g. 85012345";
-          if (others.some((a) => a.vendor === v)) return "Another account already uses this vendor number";
+          if (!/^\d{5,12}$/.test(v)) return t("Digits only, e.g. 85012345");
+          if (others.some((a) => a.vendor === v)) return t("Another account already uses this vendor number");
           return true;
         },
       });
@@ -156,13 +159,13 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
     // 6. Name
     async (d) => {
       const name = await ui.ask({
-        message: "Name",
-        prefill: d.name ?? current?.name ?? (others.length === 0 ? "My apps" : `Account ${others.length + 1}`),
-        hint: "shown in menus, e.g. Company or Personal",
+        message: t("Name"),
+        prefill: d.name ?? current?.name ?? t("Account {n}", { n: others.length + 1 }),
+        hint: t("shown in menus, e.g. Account 1"),
         validate: (v) => {
-          if (!v) return "Enter a name";
-          if (v.toLowerCase() === "all") return '"all" is reserved';
-          if (others.some((a) => a.name.toLowerCase() === v.toLowerCase())) return "Another account has this name";
+          if (!v) return t("Enter a name");
+          if (v.toLowerCase() === "all") return t('"all" is reserved');
+          if (others.some((a) => a.name.toLowerCase() === v.toLowerCase())) return t("Another account has this name");
           return true;
         },
       });
@@ -177,22 +180,22 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
         : d.keyChoice === "new" ? { issuerId: d.issuerId!, keyId: d.keyId!, keyFile: d.keyFile! }
         : (d.keyChoice as ApiKey);
       say();
-      say(`${bold(d.name!)}  ${dim(`vendor ${d.vendor} · key ${d.key.keyId}`)}`);
-      say("Checking with App Store Connect…");
+      say(`${bold(d.name!)}  ${dim(t("vendor {vendor} · key {key}", { vendor: d.vendor!, key: d.key.keyId }))}`);
+      say(t("Checking with App Store Connect…"));
       const ok = await verify(toAccount(d, current));
       const action = await ui.pick<"save" | "fix" | "cancel">({
-        message: ok ? "Everything works. Save?" : "Something is not right. What now?",
+        message: ok ? t("Everything works. Save?") : t("Something is not right. What now?"),
         back: false,
         items: ok
           ? [
-              { label: "Save", value: "save", key: "s" },
-              { label: "Go back and change something", value: "fix", key: "b" },
-              { label: "Cancel", value: "cancel", key: "c" },
+              { label: t("Save"), value: "save", key: "s" },
+              { label: t("Go back and change something"), value: "fix", key: "b" },
+              { label: t("Cancel"), value: "cancel", key: "c" },
             ]
           : [
-              { label: "Go back and fix it", value: "fix", key: "b" },
-              { label: "Save anyway", value: "save", key: "s" },
-              { label: "Cancel", value: "cancel", key: "c" },
+              { label: t("Go back and fix it"), value: "fix", key: "b" },
+              { label: t("Save anyway"), value: "save", key: "s" },
+              { label: t("Cancel"), value: "cancel", key: "c" },
             ],
       });
       if (action === "fix") return BACK;
@@ -206,31 +209,32 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
   ];
 
   // A form at the top of the screen: what is filled in, what comes next
-  const title = current ? `Change ${current.name}` : "Add an account";
+  const title = current ? t("Change {name}", { name: current.name }) : t("Add an account");
   const fields: [step: number, label: string, value: (d: AccountDraft) => string | undefined, applies: (d: AccountDraft) => boolean][] = [
-    [0, "API key", (d) => (d.keyChoice === "keep" ? `current (${current?.key.keyId})` : d.keyChoice === "new" ? "a new key" : d.keyChoice ? `same as ${others.find((a) => a.key === d.keyChoice)?.name}` : undefined), () => !!current || reusable.length > 0],
-    [1, "Key file", (d) => d.keyFile, (d) => d.keyChoice === "new"],
-    [2, "Key ID", (d) => d.keyId, (d) => d.keyChoice === "new"],
-    [3, "Issuer ID", (d) => d.issuerId, (d) => d.keyChoice === "new"],
-    [4, "Vendor number", (d) => d.vendor, () => true],
-    [5, "Name", (d) => d.name, () => true],
+    [0, t("API key"), (d) => (d.keyChoice === "keep" ? t("current ({id})", { id: current?.key.keyId ?? "" }) : d.keyChoice === "new" ? t("a new key") : d.keyChoice ? t("same as {name}", { name: others.find((a) => a.key === d.keyChoice)?.name ?? "" }) : undefined), () => !!current || reusable.length > 0],
+    [1, t("Key file"), (d) => d.keyFile, (d) => d.keyChoice === "new"],
+    [2, t("Key ID"), (d) => d.keyId, (d) => d.keyChoice === "new"],
+    [3, t("Issuer ID"), (d) => d.issuerId, (d) => d.keyChoice === "new"],
+    [4, t("Vendor number"), (d) => d.vendor, () => true],
+    [5, t("Name"), (d) => d.name, () => true],
   ];
+  const width = Math.max(15, ...fields.map((f) => f[1].length + 1));
   const draw = (index: number) => {
     const shown = fields.filter((f) => f[3](draft));
     const position = shown.findIndex((f) => f[0] === index);
     ui.clear();
     say();
-    say(`${bold(title)}${position >= 0 ? dim(`   step ${position + 1} of ${shown.length}`) : dim("   check")}`);
+    say(`${bold(title)}${position >= 0 ? dim(`   ${t("step {n} of {total}", { n: position + 1, total: shown.length })}`) : dim(`   ${t("check")}`)}`);
     say(dim("─".repeat(60)));
     for (const [step, label, value] of shown) {
       const v = value(draft);
       const here = step === index;
       const mark = here ? "›" : step < index && v ? "✓" : "·";
       const text = step < index && v ? (v.length > 44 ? "…" + v.slice(-43) : v) : "";
-      say(`${here ? bold(mark) : dim(mark)} ${here ? bold(label.padEnd(15)) : label.padEnd(15)}${dim(text)}`);
+      say(`${here ? bold(mark) : dim(mark)} ${here ? bold(label.padEnd(width)) : label.padEnd(width)}${dim(text)}`);
     }
     say(dim("─".repeat(60)));
-    say(dim("Esc goes back a step."));
+    say(dim(t("Esc goes back a step.")));
     say();
   };
 
@@ -248,7 +252,7 @@ async function verify(account: Account): Promise<boolean> {
   say(`${sales.ok ? "✓" : "✗"} ${sales.message}`);
   if (sales.ok) {
     const catalog = await loadCatalog(account, true, (m) => say(`! ${m}`));
-    if (catalog.apps.length > 0) say(`✓ App names: ${catalog.apps.length} app(s)`);
+    if (catalog.apps.length > 0) say(`✓ ${t("App names: {n} app(s)", { n: catalog.apps.length })}`);
   }
   say();
   return sales.ok;
@@ -258,13 +262,13 @@ async function pickCurrency(current: string): Promise<string | null> {
   const common = ["USD", "EUR", "GBP", "TRY", "JPY", "CAD", "AUD", "CHF"];
   for (;;) {
     const code = await ui.pick<string>({
-      message: "Show amounts in",
-      items: [...common.map((c) => ({ label: c, value: c, hint: c === current ? "current" : undefined })), { label: "Other…", value: "", key: "o" }],
+      message: t("Show amounts in"),
+      items: [...common.map((c) => ({ label: c, value: c, hint: c === current ? t("current") : undefined })), { label: t("Other…"), value: "", key: "o" }],
       start: Math.max(0, common.indexOf(current)),
     });
     if (code === BACK || code === QUIT) return null;
     if (code) return code;
-    const typed = await ui.ask({ message: "Currency code", hint: "3 letters, e.g. SEK", validate: (v) => (/^[a-z]{3}$/i.test(v) ? true : "3 letters, e.g. SEK") });
+    const typed = await ui.ask({ message: t("Currency code"), hint: t("3 letters, e.g. SEK"), validate: (v) => (/^[a-z]{3}$/i.test(v) ? true : t("3 letters, e.g. SEK")) });
     if (typed !== BACK) return typed.toUpperCase();
   }
 }
@@ -274,12 +278,12 @@ async function accountMenu(settings: Settings, target: Account): Promise<void> {
     const action = await ui.pick<string>({
       message: target.name,
       items: [
-        { label: "Change name, vendor number or key", value: "edit", key: "c" },
-        { label: "Check access", value: "check", key: "a" },
+        { label: t("Change name, vendor number or key"), value: "edit", key: "c" },
+        { label: t("Check access"), value: "check", key: "a" },
         target.catalogKey
-          ? { label: "Remove the in-app purchase key", value: "drop-catalog", hint: target.catalogKey.keyId }
-          : { label: "Add a key that lists in-app purchases", value: "catalog", hint: "optional, App Manager role" },
-        { label: "Remove this account", value: "remove", key: "r" },
+          ? { label: t("Remove the in-app purchase key"), value: "drop-catalog", hint: target.catalogKey.keyId }
+          : { label: t("Add a key that lists in-app purchases"), value: "catalog", hint: t("optional, App Manager role") },
+        { label: t("Remove this account"), value: "remove", key: "r" },
       ],
     });
     if (action === BACK || action === QUIT) return;
@@ -290,30 +294,30 @@ async function accountMenu(settings: Settings, target: Account): Promise<void> {
         if (settings.lastAccount === target.name) settings.lastAccount = updated.name;
         settings.accounts[settings.accounts.indexOf(target)] = updated;
         saveSettings(settings);
-        say("Saved.");
+        say(t("Saved."));
         target = updated;
       }
     } else if (action === "check") {
-      say("Checking with App Store Connect…");
+      say(t("Checking with App Store Connect…"));
       await verify(target);
     } else if (action === "catalog") {
-      say(dim("Only needed to name in-app purchases with no sales in the months you look at."));
+      say(dim(t("Only needed to name in-app purchases with no sales in the months you look at.")));
       const keyOwner = await accountWizard(others, target);
       if (keyOwner) {
         target.catalogKey = keyOwner.key;
         saveSettings(settings);
-        say("Saved.");
+        say(t("Saved."));
       }
     } else if (action === "drop-catalog") {
       delete target.catalogKey;
       saveSettings(settings);
-      say("Removed.");
+      say(t("Removed."));
     } else if (action === "remove") {
-      if (await ui.yesNo(`Remove "${target.name}"? Its key file stays in the keys folder.`, false)) {
+      if (await ui.yesNo(t('Remove "{name}"? Its key file stays in the keys folder.', { name: target.name }), false)) {
         settings.accounts = settings.accounts.filter((a) => a !== target);
         if (settings.lastAccount === target.name) delete settings.lastAccount;
         saveSettings(settings);
-        say("Removed.");
+        say(t("Removed."));
         return;
       }
     }
@@ -324,12 +328,12 @@ async function notificationsMenu(settings: Settings): Promise<void> {
   for (;;) {
     const on = isDailyCheckOn();
     const choice = await ui.pick<"now" | "on" | "off">({
-      message: "Notifications",
+      message: t("Notifications"),
       items: [
-        { label: "Check now", value: "now", key: "c", hint: "is last month's Financial Report out?" },
+        { label: t("Check now"), value: "now", key: "c", hint: t("is last month's Financial Report out?") },
         on
-          ? { label: "Turn off the daily check", value: "off", key: "t", hint: "on now" }
-          : { label: "Turn on a daily check at 10:00", value: "on", key: "t", hint: "a desktop notification once the month is final" },
+          ? { label: t("Turn off the daily check"), value: "off", key: "t", hint: t("on now") }
+          : { label: t("Turn on a daily check at 10:00"), value: "on", key: "t", hint: t("a desktop notification once the month is final") },
       ],
     });
     if (choice === BACK || choice === QUIT) return;
@@ -344,20 +348,83 @@ async function notificationsMenu(settings: Settings): Promise<void> {
   }
 }
 
+/** Parses "2500", "2,500", "2.500,50", "2500.50" into a number; null if it is not one. */
+export function parseAmount(text: string): number | null {
+  let t = text.trim().replace(/[\s$€£₺¥]/g, "");
+  if (!t) return null;
+  const lastComma = t.lastIndexOf(",");
+  const lastDot = t.lastIndexOf(".");
+  // the separator that comes last, with 1-2 digits after it, is the decimal one
+  const decimal = Math.max(lastComma, lastDot);
+  if (decimal >= 0 && t.length - decimal - 1 <= 2 && !(lastComma >= 0 && lastDot >= 0 && t.length - decimal - 1 === 0)) {
+    t = t.slice(0, decimal).replace(/[.,]/g, "") + "." + t.slice(decimal + 1);
+  } else t = t.replace(/[.,]/g, "");
+  if (!/^\d+(\.\d+)?$/.test(t)) return null;
+  const n = Number(t);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+const goalText = (settings: Settings, key: string) => {
+  const g = settings.goals?.[key];
+  return g ? money(g.amount, g.currency) : undefined;
+};
+
+export function goalsHint(settings: Settings): string {
+  const set = Object.keys(settings.goals ?? {}).length;
+  if (set === 0) return t("not set");
+  if (set === 1) {
+    const [key] = Object.keys(settings.goals!);
+    const amount = goalText(settings, key) ?? "";
+    return key === "all" ? t("{amount} for all a month", { amount }) : t("{amount} a month", { amount });
+  }
+  return t("{n} goals", { n: set });
+}
+
+async function goalsMenu(settings: Settings): Promise<void> {
+  for (;;) {
+    const targets = [
+      ...settings.accounts.map((a) => ({ key: a.vendor, name: a.name })),
+      ...(settings.accounts.length > 1 ? [{ key: "all", name: t("All accounts together") }] : []),
+    ];
+    const key = await ui.pick<string>({
+      message: t("Monthly goals"),
+      items: targets.map((x) => ({ label: x.name, value: x.key, hint: goalText(settings, x.key) ?? t("not set") })),
+    });
+    if (key === BACK || key === QUIT) return;
+    const target = targets.find((x) => x.key === key)!;
+    const current = settings.goals?.[key];
+    const currency = current?.currency ?? settings.currency;
+    const typed = await ui.ask({
+      message: t("Goal for {name}, a month, in {currency}", { name: target.name, currency }),
+      hint: current ? t("Leave it empty to remove the goal.") : t("For example 2500. The month screen shows how far along you are."),
+      prefill: current ? String(current.amount) : undefined,
+      validate: (v) => (v.trim() === "" || parseAmount(v) !== null ? true : t("A number, e.g. 2500")),
+    });
+    if (typed === BACK) continue;
+    const amount = parseAmount(typed);
+    const goals = { ...(settings.goals ?? {}) };
+    if (amount === null) delete goals[key];
+    else goals[key] = { amount, currency };
+    settings.goals = goals;
+    saveSettings(settings);
+    say(amount === null ? t("Goal removed.") : `✓ ${t("{name}: {amount} a month.", { name: target.name, amount: money(amount, currency) })}`);
+  }
+}
+
 async function checkUpdates(): Promise<void> {
-  say("Looking for a new version…");
+  say(t("Looking for a new version…"));
   const latest = await latestVersion();
   if (!latest) {
-    say("Could not check (offline, or a private repository without the GitHub CLI).");
+    say(t("Could not check (offline, or a private repository without the GitHub CLI)."));
     return;
   }
   if (compareVersions(latest, pkg.version) <= 0) {
-    say(`✓ asc-payout ${pkg.version} is the latest version.`);
+    say(`✓ ${t("asc-payout {version} is the latest version.", { version: pkg.version })}`);
     return;
   }
-  if (await ui.yesNo(`Version ${latest.replace(/^v/, "")} is available (you have ${pkg.version}). Update now?`)) {
+  if (await ui.yesNo(t("Version {latest} is available (you have {version}). Update now?", { latest: latest.replace(/^v/, ""), version: pkg.version }))) {
     await runUpdate(pkg.version);
-    say(dim("Start asc-payout again to use the new version."));
+    say(dim(t("Start asc-payout again to use the new version.")));
   }
 }
 
@@ -366,9 +433,9 @@ async function refreshAppNames(settings: Settings): Promise<void> {
   const found: string[] = [];
   try {
     for (const a of settings.accounts) {
-      spinner.text(`${a.name} · app names`);
+      spinner.text(`${a.name} · ${t("app names")}`);
       const catalog = await loadCatalog(a, true, () => {});
-      found.push(`${a.name}: ${catalog.apps.length} app(s)`);
+      found.push(t("{name}: {n} app(s)", { name: a.name, n: catalog.apps.length }));
     }
   } finally {
     spinner.stop();
@@ -377,8 +444,30 @@ async function refreshAppNames(settings: Settings): Promise<void> {
 }
 
 async function waitKey(): Promise<void> {
-  say(dim("Press any key to go back."));
+  say(dim(t("Press any key to go back.")));
   await ui.key();
+}
+
+const languageName = (code: Lang) => LANGS.find((l) => l.code === code)?.name ?? code;
+
+/** "Türkçe", or "System (Türkçe)" when the language follows the system. */
+export function languageHint(settings: Settings): string {
+  return settings.language ? languageName(settings.language) : t("System ({name})", { name: languageName(systemLang()) });
+}
+
+async function pickLanguage(settings: Settings): Promise<void> {
+  const choice = await ui.pick<Lang | "system">({
+    message: t("Language"),
+    items: [
+      { label: t("Same as the system"), value: "system" as const, hint: languageName(systemLang()) },
+      ...LANGS.map((l) => ({ label: l.name, value: l.code })),
+    ],
+    start: settings.language ? 1 + LANGS.findIndex((l) => l.code === settings.language) : 0,
+  });
+  if (choice === BACK || choice === QUIT) return;
+  if (choice === "system") delete settings.language;
+  else settings.language = choice;
+  saveSettings(settings);
 }
 
 /** Accounts and settings. Returns when the person goes back. */
@@ -388,33 +477,36 @@ export async function runSetup(): Promise<void> {
   if (settings.accounts.length === 0) {
     const account = await accountWizard([]);
     if (!account) {
-      say("Nothing saved. Run asc-payout setup whenever you are ready.");
+      say(t("Nothing saved. Run asc-payout setup whenever you are ready."));
       return;
     }
     settings.accounts.push(account);
     const currency = await pickCurrency(settings.currency);
     if (currency) settings.currency = currency;
     saveSettings(settings);
-    say(`Saved. ${dim("Run asc-payout to see your earnings.")}`);
+    say(`${t("Saved.")} ${dim(t("Run asc-payout to see your earnings."))}`);
     return;
   }
 
   for (;;) {
     ui.clear();
     say();
-    say(`${bold("Settings")}  ${dim(settingsFile())}`);
+    say(`${bold(t("Settings"))}  ${dim(settingsFile())}`);
     say();
-    const choice = await ui.pick<Account | "add" | "currency" | "notify" | "update" | "files" | "names">({
-      message: "Accounts and settings",
+    const choice = await ui.pick<Account | "add" | "currency" | "language" | "goals" | "ads" | "notify" | "update" | "files" | "names">({
+      message: t("Accounts and settings"),
       items: [
-        ...settings.accounts.map((a) => ({ label: a.name, value: a, hint: `vendor ${a.vendor} · key ${a.key.keyId}` })),
-        { label: "+ Add an account", value: "add" as const, key: "a" },
+        ...settings.accounts.map((a) => ({ label: a.name, value: a, hint: t("vendor {vendor} · key {key}", { vendor: a.vendor, key: a.key.keyId }) })),
+        { label: `+ ${t("Add an account")}`, value: "add" as const, key: "a" },
         { separator: "" },
-        { label: "Currency", value: "currency" as const, hint: settings.currency, key: "c" },
-        { label: "Notifications", value: "notify" as const, key: "n", hint: isDailyCheckOn() ? "daily check on" : "when a month is final" },
-        { label: "Check for updates", value: "update" as const, key: "u", hint: `you have ${pkg.version}` },
-        { label: "Refresh app names", value: "names" as const, key: "r", hint: "after adding or renaming apps" },
-        { label: "Where are my files?", value: "files" as const, key: "f" },
+        { label: t("Currency"), value: "currency" as const, hint: settings.currency, key: "c" },
+        { label: t("Language"), value: "language" as const, hint: languageHint(settings), key: "l" },
+        { label: t("Monthly goals"), value: "goals" as const, hint: goalsHint(settings), key: "g" },
+        { label: "Apple Ads", value: "ads" as const, hint: settings.ads ? t("connected") : t("connect for profit and ROAS"), key: "d" },
+        { label: t("Notifications"), value: "notify" as const, key: "n", hint: isDailyCheckOn() ? t("daily check on") : t("when a month is final") },
+        { label: t("Check for updates"), value: "update" as const, key: "u", hint: t("you have {version}", { version: pkg.version }) },
+        { label: t("Refresh app names"), value: "names" as const, key: "r", hint: t("after adding or renaming apps") },
+        { label: t("Where are my files?"), value: "files" as const, key: "f" },
       ],
     });
     if (choice === BACK || choice === QUIT) return;
@@ -430,6 +522,12 @@ export async function runSetup(): Promise<void> {
         settings.currency = currency;
         saveSettings(settings);
       }
+    } else if (choice === "language") {
+      await pickLanguage(settings);
+    } else if (choice === "goals") {
+      await goalsMenu(settings);
+    } else if (choice === "ads") {
+      await adsMenu(settings);
     } else if (choice === "notify") {
       await notificationsMenu(settings);
     } else if (choice === "update") {
@@ -450,23 +548,26 @@ export async function runSetup(): Promise<void> {
 /** Shows configuration status and location. */
 export function showStatus(): void {
   const settings = loadSettings();
+  const labels = [t("Settings"), t("Folder"), t("Downloads"), t("Currency")].map((l) => `${l}:`);
+  const width = Math.max(11, ...labels.map((l) => l.length + 1));
+  const [settingsLabel, folderLabel, downloadsLabel, currencyLabel] = labels.map((l) => l.padEnd(width));
   say();
-  say(`Settings:  ${settingsFile()}${existsSync(settingsFile()) ? "" : " (not created yet; run: asc-payout setup)"}`);
-  say(`Folder:    ${configDir()}  (settings and API keys)`);
-  say(`Downloads: ${cacheDir()}`);
-  say(`Currency:  ${process.env.ASC_PAYOUT_CURRENCY || settings.currency}`);
+  say(`${settingsLabel}${settingsFile()}${existsSync(settingsFile()) ? "" : ` ${t("(not created yet; run: asc-payout setup)")}`}`);
+  say(`${folderLabel}${configDir()}  ${t("(settings and API keys)")}`);
+  say(`${downloadsLabel}${cacheDir()}`);
+  say(`${currencyLabel}${process.env.ASC_PAYOUT_CURRENCY || settings.currency}`);
   say();
-  if (settings.accounts.length === 0) say("No accounts yet.");
+  if (settings.accounts.length === 0) say(t("No accounts yet."));
   for (const a of settings.accounts) {
     const keyOk = existsSync(resolveKeyFile(a.key.keyFile));
     say(`• ${a.name}`);
-    say(`    vendor ${a.vendor} · key ${a.key.keyId}${keyOk ? "" : " (KEY FILE MISSING)"}${a.catalogKey ? ` · in-app purchase key ${a.catalogKey.keyId}` : ""}`);
+    say(`    ${t("vendor {vendor} · key {key}", { vendor: a.vendor, key: a.key.keyId })}${keyOk ? "" : ` ${t("(KEY FILE MISSING)")}`}${a.catalogKey ? ` · ${t("in-app purchase key {id}", { id: a.catalogKey.keyId })}` : ""}`);
   }
   try {
     const env = accountFromEnv();
     if (env) {
       say();
-      say(`ASC_PAYOUT_* variables are set: vendor ${env.vendor} is used instead of the accounts above.`);
+      say(t("ASC_PAYOUT_* variables are set: vendor {vendor} is used instead of the accounts above.", { vendor: env.vendor }));
     }
   } catch (error) {
     say();

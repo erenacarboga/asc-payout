@@ -210,12 +210,12 @@ describe("command line", () => {
   });
 
   test("all accounts as JSON", async () => {
-    freshAccounts([["Notes Inc", "80000001"], ["Personal", "80000002"]]);
+    freshAccounts([["Notes Inc", "80000001"], ["Account 2", "80000002"]]);
     const w = october();
     serve(w);
     expect(await run(["-a", "all", "-m", "2026-10", "--json"])).toBe(0);
     const out = JSON.parse(output.join("\n"));
-    expect(out.results.map((r: { account: { name: string } }) => r.account.name)).toEqual(["Notes Inc", "Personal"]);
+    expect(out.results.map((r: { account: { name: string } }) => r.account.name)).toEqual(["Notes Inc", "Account 2"]);
     expect(out.errors).toEqual([]);
   });
 
@@ -231,5 +231,110 @@ describe("command line", () => {
     }) as unknown as typeof fetch;
     expect(await run(["demo", "-a", "all", "-m", "2026-10"])).toBe(0);
     expect(output.join("\n")).toContain("All accounts");
+  });
+});
+
+describe("profit after Apple Ads", () => {
+  async function connectAds() {
+    const { newKeyPair } = await import("../src/ads/appleAds");
+    const { loadSettings, saveSettings } = await import("../src/config/settings");
+    const { writeFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const pair = newKeyPair();
+    writeFileSync(join(process.env.ASC_PAYOUT_CONFIG_DIR!, "keys", "apple-ads-private-key.pem"), pair.privateKey);
+    const s = loadSettings();
+    s.ads = { clientId: "SEARCHADS.11111111-2222-3333-4444-555555555555", teamId: "SEARCHADS.11111111-2222-3333-4444-555555555555", keyId: crypto.randomUUID(), keyFile: "keys/apple-ads-private-key.pem" };
+    saveSettings(s);
+    return pair.publicKey;
+  }
+
+  function fakeAds(seen: { token?: URLSearchParams; contexts: string[]; bodies: unknown[] }, tokenAnswer?: Response) {
+    const inner = globalThis.fetch;
+    const { setAdsRetryDelays } = require("../src/ads/appleAds");
+    setAdsRetryDelays([0, 0, 0]);
+    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(String(input));
+      const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "content-type": "application/json" } });
+      if (url.host === "appleid.apple.com") {
+        seen.token = new URLSearchParams(String(init?.body));
+        return tokenAnswer ?? json({ access_token: "ads-token", token_type: "Bearer", expires_in: 3600 });
+      }
+      if (url.host === "api.searchads.apple.com") {
+        expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer ads-token");
+        if (url.pathname === "/api/v5/acls") {
+          return json({ data: [{ orgId: 1, orgName: "Studio US", currency: "USD", timeZone: "America/Los_Angeles" }, { orgId: 2, orgName: "Studio EU", currency: "EUR", timeZone: "Europe/Paris" }] });
+        }
+        if (url.pathname === "/api/v5/reports/campaigns") {
+          const ctx = (init?.headers as Record<string, string>)["X-AP-Context"];
+          seen.contexts.push(ctx);
+          seen.bodies.push(JSON.parse(String(init?.body)));
+          const row = (id: number, name: string, adamId: number, app: string, spend: string, currency: string, installs: number) => ({
+            total: { impressions: 1000, taps: installs * 2, totalInstalls: installs, localSpend: { amount: spend, currency } },
+            metadata: { campaignId: id, campaignName: name, adamId, app: { appName: app, adamId } },
+          });
+          const rows = ctx === "orgId=1"
+            ? [row(11, "Notes US", 900001, "Notes", "10.00", "USD", 20), row(12, "Other", 999999, "Other App", "3.00", "USD", 1)]
+            : [row(21, "Notes EU", 900001, "Notes", "5.00", "EUR", 5)];
+          return json({ data: { reportingDataResponse: { row: rows } }, pagination: { totalResults: rows.length, startIndex: 0, itemsPerPage: rows.length } });
+        }
+      }
+      return inner(input, init);
+    }) as unknown as typeof fetch;
+  }
+
+  test("revenue, spend, profit and ROAS by app; the client secret is signed right", async () => {
+    const publicKey = await connectAds();
+    serve(october());
+    const seen = { contexts: [] as string[], bodies: [] as unknown[] } as { token?: URLSearchParams; contexts: string[]; bodies: unknown[] };
+    fakeAds(seen);
+
+    expect(await run(["profit", "--month", "2026-10", "--json"])).toBe(0);
+    const p = JSON.parse(output.join("\n")).profit;
+    expect(seen.contexts).toEqual(["orgId=1", "orgId=2"]);
+    expect(seen.bodies[0]).toMatchObject({ startTime: "2026-09-27", endTime: "2026-10-31", timeZone: "ORTZ" });
+
+    // OAuth client credentials with an ES256 client secret
+    expect(seen.token!.get("grant_type")).toBe("client_credentials");
+    expect(seen.token!.get("scope")).toBe("searchadsorg");
+    const [h, b, sig] = seen.token!.get("client_secret")!.split(".");
+    const claims = JSON.parse(Buffer.from(b, "base64url").toString());
+    expect(JSON.parse(Buffer.from(h, "base64url").toString())).toMatchObject({ alg: "ES256" });
+    expect(claims).toMatchObject({ sub: "SEARCHADS.11111111-2222-3333-4444-555555555555", aud: "https://appleid.apple.com" });
+    const { createPublicKey, verify } = await import("node:crypto");
+    expect(verify("sha256", Buffer.from(`${h}.${b}`), { key: createPublicKey(publicKey), dsaEncoding: "ieee-p1363" }, Buffer.from(sig, "base64url"))).toBe(true);
+
+    const notes = p.apps.find((a: { name: string }) => a.name === "Notes");
+    expect(notes.revenue).toBeCloseTo(12.72 + 7.2 * 1.1 + 20, 6);
+    expect(notes.spend).toBeCloseTo(10 + 5 * 1.1, 6);
+    expect(notes).toMatchObject({ installs: 25, campaigns: 2, appId: "900001" });
+    const other = p.apps.find((a: { name: string }) => a.name === "Other App");
+    expect(other).toMatchObject({ revenue: null, spend: 3 });
+    expect(p.revenueBasis).toBe("reports");
+
+    output = [];
+    expect(await run(["profit", "--month", "2026-10"])).toBe(0);
+    const text = output.join("\n");
+    expect(text).toContain("Profit after Apple Ads  ·  October 2026");
+    expect(text).toMatch(/Notes\s+\$40\.64\s+\$15\.50\s+\$25\.14\s+2\.6x\s+25\s+\$0\.62/);
+    expect(text).toContain("Studio US, Studio EU");
+
+    output = [];
+    expect(await run(["profit", "--month", "2026-10", "--csv"])).toBe(0);
+    expect(output.join("\n")).toContain("2026-10,Notes,900001,Notes Inc,40.64,15.50,25.14,2.62,25,0.62,USD");
+  });
+
+  test("a rejected key says what to check", async () => {
+    await connectAds();
+    serve(october());
+    const notes: string[] = [];
+    ui.note = (t) => void notes.push(t);
+    fakeAds({ contexts: [], bodies: [] }, new Response(JSON.stringify({ error: "invalid_client" }), { status: 400 }));
+    expect(await run(["profit", "--month", "2026-10"])).toBe(1);
+    expect(notes.join("\n")).toContain("Apple Ads did not accept the key (invalid_client)");
+  });
+
+  test("not connected", async () => {
+    serve(october());
+    expect(run(["profit"])).rejects.toThrow("Apple Ads is not connected");
   });
 });

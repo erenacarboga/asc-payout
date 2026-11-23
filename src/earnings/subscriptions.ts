@@ -1,6 +1,7 @@
 import { downloadDays } from "../asc/reports";
 import { addDays, eachDay, shortDate, today } from "../calendar/fiscal";
 import type { Account } from "../config/settings";
+import { t } from "../i18n";
 import { money } from "../money/format";
 import { convert, getRates } from "../money/rates";
 import { readSubscriptionEvents, readSubscriptionSnapshot, type EventCounts } from "../reports/subscriptions";
@@ -44,7 +45,7 @@ export interface SubscriptionOptions {
 /** Active subscriptions on the latest published day, and what happened over the last `days` days. */
 export async function computeSubscriptions(account: Account, opts: SubscriptionOptions): Promise<SubscriptionsResult> {
   // The snapshot of a day is published the next morning; take the newest available
-  opts.log(`${account.name} · subscription snapshot`);
+  opts.log(`${account.name} · ${t("subscription snapshot")}`);
   // Apple answers "no sales" for a snapshot that is merely late, so such a day is skipped:
   // the newest day with data wins. Only when every recent day says so is it really zero.
   let asOf: string | null = null;
@@ -66,14 +67,14 @@ export async function computeSubscriptions(account: Account, opts: SubscriptionO
 
   const to = asOf ?? addDays(today(), -1);
   const from = addDays(to, -(opts.days - 1));
-  opts.log(`${account.name} · subscription events`);
-  const eventDays = await downloadDays(account, eachDay(from, to), opts.useCache, "SUBSCRIPTION_EVENT", (d, t) => opts.progress?.(d, t, "days"));
+  opts.log(`${account.name} · ${t("subscription events")}`);
+  const eventDays = await downloadDays(account, eachDay(from, to), opts.useCache, "SUBSCRIPTION_EVENT", (d, n) => opts.progress?.(d, n, t("days")));
   const events = readSubscriptionEvents(eventDays.flatMap((d) => (d.text ? [d.text] : [])));
   const available = eventDays.filter((d) => d.status === "sales" || d.status === "no-sales").length;
 
   const lines = readSubscriptionSnapshot(snapshotText);
   const currencies = new Set(lines.flatMap((l) => Object.keys(l.monthly)));
-  opts.log(`${account.name} · exchange rates`);
+  opts.log(`${account.name} · ${t("exchange rates")}`);
   const table = await getRates(currencies, opts.currency, to);
 
   const byApp = new Map<string, SubscriptionApp>();
@@ -116,11 +117,20 @@ export function renderSubscriptions(r: SubscriptionsResult): string {
   const m = (n: number) => money(n, r.currency);
   const out: string[] = [];
   const W = 34;
-  const rule = "  " + "─".repeat(W + 8 * 3 + 13);
+  // columns grow when a translated heading is wider than the English one
+  const col = (text: string, min: number) => Math.max(min, t(text).length + 1);
+  const PAYING = col("Paying", 8);
+  const TRIALS = col("Trials", 8);
+  const ISSUES = col("Issues", 8);
+  const MRR = col("MRR", 13);
+  const rule = "  " + "─".repeat(W + PAYING + TRIALS + ISSUES + MRR);
   out.push("");
-  out.push(bold(`  ${r.account.name}  ·  Subscriptions`) + dim(r.asOf ? `  ·  active on ${shortDate(r.asOf)}` : "  ·  no snapshot published in the last 5 days"));
+  out.push(
+    bold(`  ${r.account.name}  ·  ${t("Subscriptions")}`) +
+      dim(`  ·  ${r.asOf ? t("active on {date}", { date: shortDate(r.asOf) }) : t("no snapshot published in the last 5 days")}`),
+  );
   out.push("");
-  out.push(dim(`  ${"App".padEnd(W)}${"Paying".padStart(8)}${"Trials".padStart(8)}${"Issues".padStart(8)}${"MRR".padStart(13)}`));
+  out.push(dim(`  ${t("App").padEnd(W)}${t("Paying").padStart(PAYING)}${t("Trials").padStart(TRIALS)}${t("Issues").padStart(ISSUES)}${t("MRR").padStart(MRR)}`));
   out.push(rule);
   const total = { paying: 0, trials: 0, issues: 0, mrr: 0 };
   for (const a of r.apps) {
@@ -130,26 +140,35 @@ export function renderSubscriptions(r: SubscriptionsResult): string {
     total.issues += a.billingIssues;
     total.mrr += a.mrr;
     const name = a.app.length > W - 1 ? a.app.slice(0, W - 2) + "…" : a.app;
-    out.push(`  ${name.padEnd(W)}${String(a.paying).padStart(8)}${String(a.trials).padStart(8)}${String(a.billingIssues || "").padStart(8)}${m(a.mrr).padStart(13)}`);
+    out.push(`  ${name.padEnd(W)}${String(a.paying).padStart(PAYING)}${String(a.trials).padStart(TRIALS)}${String(a.billingIssues || "").padStart(ISSUES)}${m(a.mrr).padStart(MRR)}`);
   }
   out.push(rule);
-  out.push(bold(`  ${"Total".padEnd(W)}${String(total.paying).padStart(8)}${String(total.trials).padStart(8)}${String(total.issues || "").padStart(8)}${m(total.mrr).padStart(13)}`));
-  out.push(dim("  MRR: monthly proceeds of paying subscriptions at their current price (weekly x 4.35, yearly / 12),"));
-  out.push(dim("  before tax. Issues: billing retry or grace period."));
+  out.push(
+    bold(`  ${t("Total").padEnd(W)}${String(total.paying).padStart(PAYING)}${String(total.trials).padStart(TRIALS)}${String(total.issues || "").padStart(ISSUES)}${m(total.mrr).padStart(MRR)}`),
+  );
+  out.push(dim(`  ${t("MRR: monthly proceeds of paying subscriptions at their current price (weekly x 4.35, yearly / 12),")}`));
+  out.push(dim(`  ${t("before tax. Issues: billing retry or grace period.")}`));
 
   const e = r.apps.reduce((acc, a) => {
     for (const k of ["trialStarts", "trialConversions", "newPaid", "renewals", "cancellations", "refunds", "billingRecovered"] as const) acc[k] += a.events[k];
     return acc;
   }, emptyEvents());
+  const w = r.window;
   out.push("");
-  out.push(bold(`  Last ${r.window.days} days`) + dim(`  ·  ${shortDate(r.window.from, false)} - ${shortDate(r.window.to)}${r.window.available < r.window.days ? `  (${r.window.available} of ${r.window.days} days available)` : ""}`));
-  out.push(`  ${"New trials".padEnd(26)}${String(e.trialStarts).padStart(8)}`);
-  out.push(`  ${"Trial → paid".padEnd(26)}${String(e.trialConversions).padStart(8)}` + dim(`   ${pct(e.trialConversions, e.trialStarts)} of new trials (same period)`));
-  out.push(`  ${"New paid (no trial)".padEnd(26)}${String(e.newPaid).padStart(8)}`);
-  out.push(`  ${"Renewals".padEnd(26)}${String(e.renewals).padStart(8)}` + (e.billingRecovered ? dim(`   ${e.billingRecovered} after a billing retry`) : ""));
-  out.push(`  ${"Cancellations".padEnd(26)}${String(e.cancellations).padStart(8)}`);
-  out.push(`  ${"Refunds".padEnd(26)}${String(e.refunds).padStart(8)}`);
-  if (r.unconverted.length) out.push(dim(`  No exchange rate for ${r.unconverted.join(", ")}; left out of MRR.`));
+  out.push(
+    bold(`  ${t("Last {days} days", { days: w.days })}`) +
+      dim(`  ·  ${shortDate(w.from, false)} - ${shortDate(w.to)}${w.available < w.days ? `  (${t("{available} of {days} days available", { available: w.available, days: w.days })})` : ""}`),
+  );
+  const labels = ["New trials", "Trial → paid", "New paid (no trial)", "Renewals", "Cancellations", "Refunds"];
+  const L = Math.max(26, ...labels.map((l) => t(l).length + 1));
+  const row = (text: string, n: number) => `  ${t(text).padEnd(L)}${String(n).padStart(8)}`;
+  out.push(row("New trials", e.trialStarts));
+  out.push(row("Trial → paid", e.trialConversions) + dim(`   ${t("{pct} of new trials (same period)", { pct: pct(e.trialConversions, e.trialStarts) })}`));
+  out.push(row("New paid (no trial)", e.newPaid));
+  out.push(row("Renewals", e.renewals) + (e.billingRecovered ? dim(`   ${t("{n} after a billing retry", { n: e.billingRecovered })}`) : ""));
+  out.push(row("Cancellations", e.cancellations));
+  out.push(row("Refunds", e.refunds));
+  if (r.unconverted.length) out.push(dim(`  ${t("No exchange rate for {currencies}; left out of MRR.", { currencies: r.unconverted.join(", ") })}`));
   out.push("");
   return out.join("\n");
 }

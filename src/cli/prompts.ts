@@ -10,6 +10,7 @@ import {
   useState,
   type KeypressEvent,
 } from "@inquirer/core";
+import { t } from "../i18n";
 
 /**
  * The tool's own prompts, so every screen behaves the same:
@@ -63,7 +64,7 @@ const isEscape = (key: KeypressEvent) => key.name === "escape";
 export const menu = createPrompt(<T,>(config: MenuConfig<T>, done: (value: T | Back | Quit) => void): string => {
   const back = config.back !== false;
   const entries: MenuEntry<T | Back>[] = back
-    ? [...config.items, { separator: "" }, { label: "← Back", value: BACK, key: "b" }]
+    ? [...config.items, { separator: "" }, { label: t("← Back"), value: BACK, key: "b" }]
     : config.items;
   const first = entries.findIndex((e) => selectable(e));
   const start = config.start !== undefined && selectable(entries[config.start]) ? config.start : first;
@@ -112,14 +113,14 @@ export const menu = createPrompt(<T,>(config: MenuConfig<T>, done: (value: T | B
     return `${green("✔")} ${bold(config.message)} ${cyan(chosen.label)}`;
   }
 
-  const labelWidth = Math.min(34, Math.max(...entries.filter(isItem).map((e) => e.label.length)) + 2);
+  const labelWidth = Math.min(40, Math.max(...entries.filter(isItem).map((e) => e.label.length)) + 2);
   const lines = entries.map((e, i) => {
     if (!isItem(e)) return e.separator ? `  ${dim(`── ${e.separator} ──`)}` : "";
     const pointer = i === active ? cyan("❯") : " ";
     const shortcut = e.key && e.value !== BACK ? dim(`${e.key} `) : "  ";
     const label = e.disabled ? dim(e.label) : i === active ? bold(cyan(e.label)) : e.label;
     const hint = e.disabled ? dim(e.disabled) : e.hint ? dim(e.hint) : "";
-    return `${pointer} ${shortcut}${label}${hint ? " ".repeat(Math.max(1, labelWidth - e.label.length)) + hint : ""}`;
+    return `${pointer} ${shortcut}${label}${hint ? " ".repeat(Math.max(2, labelWidth - e.label.length)) + hint : ""}`;
   });
 
   // Keep long lists to a window around the cursor
@@ -128,11 +129,11 @@ export const menu = createPrompt(<T,>(config: MenuConfig<T>, done: (value: T | B
   if (lines.length > size) {
     const top = Math.min(Math.max(0, active - Math.floor(size / 2)), lines.length - size);
     view = lines.slice(top, top + size);
-    if (top > 0) view[0] = dim("  ↑ more");
-    if (top + size < lines.length) view[view.length - 1] = dim("  ↓ more");
+    if (top > 0) view[0] = dim(`  ${t("↑ more")}`);
+    if (top + size < lines.length) view[view.length - 1] = dim(`  ${t("↓ more")}`);
   }
 
-  const help = ["↑↓ move", "enter select", back ? "esc back" : "", config.quit ? "q quit" : ""].filter(Boolean).join(" · ");
+  const help = [t("↑↓ move"), t("enter select"), back ? t("esc back") : "", config.quit ? t("q quit") : ""].filter(Boolean).join(" · ");
   return `${cyan("?")} ${bold(config.message)}\n${view.join("\n")}\n${dim(`  ${help}`)}`;
 });
 
@@ -177,7 +178,7 @@ export const ask = createPrompt((config: AskConfig, done: (value: string | Back)
         done(answer);
       } else {
         rl.write(value); // keep what was typed
-        setError(ok || "Not valid");
+        setError(ok || t("Not valid"));
       }
     } else if (isTabKey(key) && !value && fallback) {
       rl.clearLine(0);
@@ -194,7 +195,7 @@ export const ask = createPrompt((config: AskConfig, done: (value: string | Back)
   if (status === "back") return "";
   if (status === "done") return `${green("✔")} ${bold(config.message)} ${cyan(value)}`;
   const shown = value || (fallback ? dim(fallback) : "");
-  const below = [error ? red(`  ${error}`) : config.hint ? dim(`  ${config.hint}`) : "", dim(`  enter confirm${fallback ? " · tab fill" : ""}${back ? " · esc back" : ""}`)];
+  const below = [error ? red(`  ${error}`) : config.hint ? dim(`  ${config.hint}`) : "", dim(`  ${[t("enter confirm"), fallback ? t("tab fill") : "", back ? t("esc back") : ""].filter(Boolean).join(" · ")}`)];
   return [`${cyan("?")} ${bold(config.message)} ${shown}`, below.filter(Boolean).join("\n")] as [string, string];
 });
 
@@ -204,8 +205,8 @@ export async function yesNo(message: string, yes = true): Promise<boolean> {
     message,
     back: false,
     items: [
-      { label: "Yes", value: true, key: "y" },
-      { label: "No", value: false, key: "n" },
+      { label: t("Yes"), value: true, key: "y" },
+      { label: t("No"), value: false, key: "n" },
     ],
     start: yes ? 0 : 1,
   });

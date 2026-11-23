@@ -34,14 +34,14 @@ describe("accounts", () => {
   const settings: Settings = {
     currency: "USD",
     accounts: [
-      { name: "Example LLC", vendor: "80000001", key },
-      { name: "Personal", vendor: "80000002", key },
+      { name: "Account 1", vendor: "80000001", key },
+      { name: "Account 2", vendor: "80000002", key },
     ],
   };
   test("by name, vendor or a unique part of the name", () => {
-    expect(findAccount(settings, "personal")?.vendor).toBe("80000002");
-    expect(findAccount(settings, "80000001")?.name).toBe("Example LLC");
-    expect(findAccount(settings, "llc")?.name).toBe("Example LLC");
+    expect(findAccount(settings, "account 2")?.vendor).toBe("80000002");
+    expect(findAccount(settings, "80000001")?.name).toBe("Account 1");
+    expect(findAccount(settings, "1")?.name).toBe("Account 1");
     expect(findAccount(settings, "e")).toBeUndefined(); // matches both
   });
   test("environment account", () => {

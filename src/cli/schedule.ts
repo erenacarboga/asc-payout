@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { t } from "../i18n";
 import { isCompiled } from "./update";
 
 /**
@@ -63,7 +64,7 @@ export function isDailyCheckOn(run: Runner = defaultRunner, platform = process.p
 
 /** Turns the daily check on (at `hour` o'clock) or off. Returns a sentence for the person. */
 export function setDailyCheck(on: boolean, hour = 10, run: Runner = defaultRunner, platform = process.platform, exe = process.execPath): { ok: boolean; message: string } {
-  if (on && !isCompiled()) return { ok: false, message: "Only the installed program can be scheduled (not bun run)." };
+  if (on && !isCompiled()) return { ok: false, message: t("Only the installed program can be scheduled (not bun run).") };
   const time = `${String(hour).padStart(2, "0")}:00`;
 
   if (platform === "win32") {
@@ -71,8 +72,8 @@ export function setDailyCheck(on: boolean, hour = 10, run: Runner = defaultRunne
       ? run(["schtasks", "/Create", "/F", "/SC", "DAILY", "/ST", time, "/TN", TASK, "/TR", `"${exe}" watch`])
       : run(["schtasks", "/Delete", "/F", "/TN", TASK]);
     return r.ok
-      ? { ok: true, message: on ? `Every day at ${time} (Task Scheduler: "${TASK}").` : "Daily check turned off." }
-      : { ok: false, message: `Task Scheduler said: ${r.out.trim()}` };
+      ? { ok: true, message: on ? t('Every day at {time} (Task Scheduler: "{task}").', { time, task: TASK }) : t("Daily check turned off.") }
+      : { ok: false, message: t("{tool} said: {output}", { tool: t("Task Scheduler"), output: r.out.trim() }) };
   }
 
   if (platform === "darwin") {
@@ -81,16 +82,16 @@ export function setDailyCheck(on: boolean, hour = 10, run: Runner = defaultRunne
     run(["launchctl", "bootout", `gui/${uid}`, path]); // unload an older one; fine if none
     if (!on) {
       rmSync(path, { force: true });
-      return { ok: true, message: "Daily check turned off." };
+      return { ok: true, message: t("Daily check turned off.") };
     }
     mkdirSync(join(homedir(), "Library", "LaunchAgents"), { recursive: true });
     writeFileSync(path, launchAgentPlist(exe, hour));
     const r = run(["launchctl", "bootstrap", `gui/${uid}`, path]);
-    return r.ok ? { ok: true, message: `Every day at ${time} (launchd).` } : { ok: false, message: `launchctl said: ${r.out.trim()}` };
+    return r.ok ? { ok: true, message: t("Every day at {time} ({tool}).", { time, tool: "launchd" }) } : { ok: false, message: t("{tool} said: {output}", { tool: "launchctl", output: r.out.trim() }) };
   }
 
   const current = run(["crontab", "-l"]);
   const next = editCrontab(current.ok ? current.out : "", on ? cronLine(exe, hour) : undefined);
   const r = run(["crontab", "-"], next);
-  return r.ok ? { ok: true, message: on ? `Every day at ${time} (crontab).` : "Daily check turned off." } : { ok: false, message: `crontab said: ${r.out.trim()}` };
+  return r.ok ? { ok: true, message: on ? t("Every day at {time} ({tool}).", { time, tool: "crontab" }) : t("Daily check turned off.") } : { ok: false, message: t("{tool} said: {output}", { tool: "crontab", output: r.out.trim() }) };
 }

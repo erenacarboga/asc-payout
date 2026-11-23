@@ -167,32 +167,32 @@ describe("setup wizard", () => {
   });
 
   test("a second account on the same team reuses the key", async () => {
-    freshAccounts([["Company", "80000001"]]);
+    freshAccounts([["Account 1", "80000001"]]);
     serve(world());
     script([
       ["Accounts and settings", value("Add an account")],
-      ["API key", value("Same key as Company")],
+      ["API key", value("Same key as Account 1")],
       ["Vendor number", () => "80000002"],
-      ["Name", () => "Personal"],
+      ["Name", () => "Account 2"],
       ["Everything works. Save?", value("Save")],
       ["Accounts and settings", () => BACK],
     ]);
     await runSetup();
     const accounts = loadSettings().accounts;
-    expect(accounts.map((a) => a.name)).toEqual(["Company", "Personal"]);
+    expect(accounts.map((a) => a.name)).toEqual(["Account 1", "Account 2"]);
     expect(accounts[1].key).toEqual(accounts[0].key);
   });
 
   test("removing an account asks first", async () => {
-    freshAccounts([["Company", "80000001"], ["Personal", "80000002"]]);
+    freshAccounts([["Account 1", "80000001"], ["Account 2", "80000002"]]);
     script([
-      ["Accounts and settings", value("Personal")],
-      ["Personal", value("Remove this account")],
+      ["Accounts and settings", value("Account 2")],
+      ["Account 2", value("Remove this account")],
       ["Remove", () => true],
       ["Accounts and settings", () => BACK],
     ]);
     await runSetup();
-    expect(loadSettings().accounts.map((a) => a.name)).toEqual(["Company"]);
+    expect(loadSettings().accounts.map((a) => a.name)).toEqual(["Account 1"]);
   });
 });
 
@@ -200,7 +200,7 @@ describe("home menu", () => {
   const octoberWorld = () => world({ finance: { "2027-01": financialReport }, rates: { EUR: 1.1 } });
 
   test("a month: arrows, countries, export, back to the menu, quit", async () => {
-    freshAccounts([["Company", "80000001"], ["Personal", "80000002"]]);
+    freshAccounts([["Account 1", "80000001"], ["Account 2", "80000002"]]);
     serve(octoberWorld());
     const s = script(
       [
@@ -213,8 +213,8 @@ describe("home menu", () => {
     expect(await run([])).toBe(0);
     expect(s.left()).toBe(0);
     const text = output.join("\n");
-    expect(text).toContain("Company  ·  September 2026");
-    expect(text).toContain("Personal  ·  October 2026");
+    expect(text).toContain("Account 1  ·  September 2026");
+    expect(text).toContain("Account 2  ·  October 2026");
     expect(text).toContain("Country");
     const saved = readdirSync(process.env.ASC_PAYOUT_EXPORT_DIR!);
     expect(saved).toEqual(["asc-payout-2026-10.csv"]);
@@ -222,7 +222,7 @@ describe("home menu", () => {
   });
 
   test("q on a screen quits the program", async () => {
-    freshAccounts([["Company", "80000001"]]);
+    freshAccounts([["Account 1", "80000001"]]);
     serve(octoberWorld());
     const s = script([["What would you like to see?", value("Last month")]], ["q"]);
     expect(await run([])).toBe(0);
@@ -230,7 +230,7 @@ describe("home menu", () => {
   });
 
   test("history of a year from the submenu, then back", async () => {
-    freshAccounts([["Company", "80000001"]]);
+    freshAccounts([["Account 1", "80000001"]]);
     serve(octoberWorld());
     const s = script(
       [
@@ -243,11 +243,11 @@ describe("home menu", () => {
     );
     await run([]);
     expect(s.left()).toBe(0);
-    expect(output.join("\n")).toContain("History  ·  Company  ·  2026");
+    expect(output.join("\n")).toContain("History  ·  Account 1  ·  2026");
   });
 
   test("switching account is remembered", async () => {
-    freshAccounts([["Company", "80000001"], ["Personal", "80000002"]]);
+    freshAccounts([["Account 1", "80000001"], ["Account 2", "80000002"]]);
     serve(octoberWorld());
     script([
       ["What would you like to see?", value("Account")],
@@ -262,7 +262,7 @@ describe("home menu", () => {
   });
 
   test("export from the menu", async () => {
-    freshAccounts([["Company", "80000001"]]);
+    freshAccounts([["Account 1", "80000001"]]);
     serve(octoberWorld());
     script(
       [
@@ -290,7 +290,7 @@ describe("home menu", () => {
     );
     expect(await run([])).toBe(0);
     expect(s.left()).toBe(0);
-    expect(output.join("\n")).toContain("Demo Studio");
+    expect(output.join("\n")).toContain("Account 1");
   });
 });
 
@@ -347,7 +347,7 @@ describe("daily check (schedule)", () => {
 
 describe("doctor", () => {
   test("reports a missing key file with the fix", async () => {
-    freshAccounts([["Company", "80000001"]]);
+    freshAccounts([["Account 1", "80000001"]]);
     const cfg = join(process.env.ASC_PAYOUT_CONFIG_DIR!, "config.json");
     writeFileSync(cfg, readFileSync(cfg, "utf-8").replace("AuthKey_TESTKEY001", "AuthKey_MISSING999"));
     serve(world());
@@ -357,7 +357,7 @@ describe("doctor", () => {
   });
 
   test("all good", async () => {
-    freshAccounts([["Company", "80000001"]]);
+    freshAccounts([["Account 1", "80000001"]]);
     serve(world({ apps: [{ id: "1", sku: "a", name: "A" }], rates: {} }));
     const code = await runDoctor("1.0.0");
     expect(output.join("\n")).toContain("✓ Sales reports (Trends) readable");

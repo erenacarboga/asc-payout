@@ -1,5 +1,6 @@
 import type { Period, YearMonth } from "../calendar/fiscal";
 import { appOf, type Catalog } from "../asc/catalog";
+import { t } from "../i18n";
 import { convert, type RateTable } from "../money/rates";
 import { isInAppType, type Product } from "../reports/tsv";
 
@@ -12,6 +13,10 @@ export interface Line {
 }
 
 export interface AppGroup extends Line {
+  /** "app:<sku>" or "product:<id>" when the app is unknown */
+  key: string;
+  /** App Store ID of the app, when known */
+  appId?: string;
   items: Line[];
 }
 
@@ -83,7 +88,7 @@ export function groupByApp(
     const groupKey = app ? `app:${app.key}` : `product:${p.id}`;
     let group = groups.get(groupKey);
     if (!group) {
-      group = { name: app ? app.name : catalog.names[p.id] || p.title, reports: 0, trends: 0, items: [] };
+      group = { key: groupKey, appId: app?.id, name: app ? app.name : catalog.names[p.id] || p.title, reports: 0, trends: 0, items: [] };
       groups.set(groupKey, group);
     }
     const isApp = !isInAppType(p.typeId);
@@ -133,5 +138,5 @@ export function describeSources(table: RateTable): string {
     if (cur === table.currency) continue;
     by.set(rate.source, [...(by.get(rate.source) ?? []), cur]);
   }
-  return [...by.entries()].map(([src, curs]) => (src === "ECB" ? "ECB" : `${src} for ${curs.sort().join(", ")}`)).join("; ");
+  return [...by.entries()].map(([src, curs]) => (src === "ECB" ? "ECB" : t("{source} for {currencies}", { source: src, currencies: curs.sort().join(", ") }))).join("; ");
 }

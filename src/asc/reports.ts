@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { readCached, writeFileAtomic } from "../config/files";
 import { vendorCacheDir } from "../config/paths";
 import type { Account } from "../config/settings";
+import { t } from "../i18n";
 import { AscError, ascReport } from "./client";
 
 const NO_SALES = "#no-sales\n";
@@ -106,7 +107,7 @@ async function downloadFinance(kind: FinanceKind, account: Account, reportDate: 
   });
   try {
     const text = await ascReport(account.key, `/v1/financeReports?${query}`);
-    if (!kind.complete(text)) return { status: "failed", message: "the downloaded report is incomplete; try again" };
+    if (!kind.complete(text)) return { status: "failed", message: t("the downloaded report is incomplete; try again") };
     writeFileAtomic(file, text);
     return { status: "ok", text, cached: false };
   } catch (error) {
@@ -168,7 +169,7 @@ async function downloadDay(account: Account, date: string, kind: DailyKind): Pro
   });
   try {
     const text = await ascReport(account.key, `/v1/salesReports?${query}`);
-    if (!isCompleteDaily(kind, text)) return { date, status: "failed", error: "incomplete download" };
+    if (!isCompleteDaily(kind, text)) return { date, status: "failed", error: t("incomplete download") };
     return { date, status: "sales", text };
   } catch (error) {
     // Apple answers 404 both for "nothing that day" and "not published yet"
@@ -236,9 +237,9 @@ export async function checkSalesAccess(account: Account): Promise<{ ok: boolean;
   const day = await downloadDay(account, date, "SALES");
   // any answer about the report itself (even "not found") means key and vendor were accepted
   if (day.status !== "failed" || /^The request expected results|^NOT_FOUND|none were found/i.test(day.error ?? "")) {
-    return { ok: true, message: "Sales reports: OK" };
+    return { ok: true, message: t("Sales reports: OK") };
   }
   if (/\(401\)/.test(day.error ?? "")) return { ok: false, message: day.error! };
-  if (/\(403\)/.test(day.error ?? "")) return { ok: false, message: "Sales reports: this key can't read them (403). Use a key with the Finance role." };
-  return { ok: false, message: `Sales reports: ${day.error}. Check the vendor number.` };
+  if (/\(403\)/.test(day.error ?? "")) return { ok: false, message: t("Sales reports: this key can't read them (403). Use a key with the Finance role.") };
+  return { ok: false, message: t("Sales reports: {error}. Check the vendor number.", { error: String(day.error) }) };
 }

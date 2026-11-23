@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { readJson, writeFileAtomic } from "../config/files";
 import { cacheDir } from "../config/paths";
+import { t } from "../i18n";
 import { ui } from "./ui";
 
 export const REPO = "erenacarboga/asc-payout";
@@ -79,31 +80,31 @@ async function download(tag: string, files: string[], dir: string): Promise<void
     // private repository or blocked: try the GitHub CLI
   }
   const args = ["release", "download", tag, "-R", REPO, "-D", dir, "--clobber", ...files.flatMap((f) => ["-p", f])];
-  if (!gh(args).ok) throw new Error("Download failed. For a private repository, install the GitHub CLI and run: gh auth login");
+  if (!gh(args).ok) throw new Error(t("Download failed. For a private repository, install the GitHub CLI and run: gh auth login"));
 }
 
 export async function runUpdate(current: string): Promise<number> {
   if (!isCompiled()) {
-    ui.print("  Running from source: update with git pull.");
+    ui.print(`  ${t("Running from source: update with git pull.")}`);
     return 0;
   }
   const latest = await latestVersion();
-  if (!latest) throw new Error("Could not find the latest release (offline, or a private repository without the GitHub CLI).");
+  if (!latest) throw new Error(t("Could not find the latest release (offline, or a private repository without the GitHub CLI)."));
   if (compareVersions(latest, current) <= 0) {
-    ui.print(`  asc-payout ${current} is up to date.`);
+    ui.print(`  ${t("asc-payout {version} is up to date.", { version: current })}`);
     return 0;
   }
   const asset = assetName();
-  if (!asset) throw new Error(`No release build for ${process.platform} ${process.arch}.`);
+  if (!asset) throw new Error(t("No release build for {platform} {arch}.", { platform: process.platform, arch: process.arch }));
 
-  ui.print(`  Updating ${current} -> ${latest.replace(/^v/, "")}...`);
+  ui.print(`  ${t("Updating {from} -> {to}...", { from: current, to: latest.replace(/^v/, "") })}`);
   const dir = mkdtempSync(join(tmpdir(), "asc-payout-update-"));
   try {
     await download(latest, [asset, "SHA256SUMS"], dir);
     const sums = readFileSync(join(dir, "SHA256SUMS"), "utf-8");
     const want = sums.split("\n").map((l) => l.trim().split(/\s+\*?/)).find((p) => p[1] === asset)?.[0];
     const have = createHash("sha256").update(readFileSync(join(dir, asset))).digest("hex");
-    if (!want || want.toLowerCase() !== have) throw new Error("Checksum does not match; nothing was changed.");
+    if (!want || want.toLowerCase() !== have) throw new Error(t("Checksum does not match; nothing was changed."));
 
     const target = process.execPath;
     if (process.platform === "win32") {
@@ -121,7 +122,7 @@ export async function runUpdate(current: string): Promise<number> {
       chmodSync(`${target}.new`, 0o755);
       renameSync(`${target}.new`, target);
     }
-    ui.print(`  Updated to ${latest.replace(/^v/, "")}.`);
+    ui.print(`  ${t("Updated to {version}.", { version: latest.replace(/^v/, "") })}`);
     return 0;
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -149,5 +150,5 @@ export async function updateHint(current: string): Promise<string | null> {
       // not important
     }
   }
-  return latest && compareVersions(latest, current) > 0 ? `asc-payout ${latest.replace(/^v/, "")} is available: run  asc-payout update` : null;
+  return latest && compareVersions(latest, current) > 0 ? t("asc-payout {version} is available: run  asc-payout update", { version: latest.replace(/^v/, "") }) : null;
 }

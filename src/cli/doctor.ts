@@ -7,11 +7,13 @@ import { financeReportDate, monthLabel, previous, recentMonths } from "../calend
 import { writeFileAtomic } from "../config/files";
 import { cacheDir, resolveKeyFile, settingsFile } from "../config/paths";
 import { accountFromEnv, loadSettings, readKeyFile, type Account } from "../config/settings";
+import { t } from "../i18n";
 import { ui } from "./ui";
 import { compareVersions, latestVersion } from "./update";
 
 type Level = "ok" | "warn" | "fail";
 const MARK: Record<Level, string> = { ok: "✓", warn: "!", fail: "✗" };
+const clockOff = (skew: number) => (skew > 0 ? t("Clock is {n} s ahead", { n: Math.abs(skew) }) : t("Clock is {n} s behind", { n: Math.abs(skew) }));
 
 /**
  * Checks everything asc-payout depends on and says how to fix what fails.
@@ -34,12 +36,12 @@ export async function runDoctor(version: string): Promise<number> {
     const r = await fetch("https://api.appstoreconnect.apple.com/v1/apps", { method: "HEAD", signal: AbortSignal.timeout(15_000) });
     const server = Date.parse(r.headers.get("date") ?? "");
     const skew = Math.round((Date.now() - server) / 1000);
-    if (Number.isNaN(server)) line("warn", "Clock: App Store Connect sent no time to compare with");
-    else if (Math.abs(skew) > 300) line("fail", `Clock is ${Math.abs(skew)} s ${skew > 0 ? "ahead" : "behind"}`, "Sync the system clock (automatic time); App Store Connect rejects keys otherwise.");
-    else if (Math.abs(skew) > 30) line("warn", `Clock is ${Math.abs(skew)} s ${skew > 0 ? "ahead" : "behind"}`, "Turn on automatic time sync to stay safe.");
-    else line("ok", "Clock and App Store Connect reachable");
+    if (Number.isNaN(server)) line("warn", t("Clock: App Store Connect sent no time to compare with"));
+    else if (Math.abs(skew) > 300) line("fail", clockOff(skew), t("Sync the system clock (automatic time); App Store Connect rejects keys otherwise."));
+    else if (Math.abs(skew) > 30) line("warn", clockOff(skew), t("Turn on automatic time sync to stay safe."));
+    else line("ok", t("Clock and App Store Connect reachable"));
   } catch (error) {
-    line("fail", `App Store Connect not reachable: ${(error as Error).message}`, "Check the internet connection, proxy or firewall.");
+    line("fail", t("App Store Connect not reachable: {error}", { error: (error as Error).message }), t("Check the internet connection, proxy or firewall."));
   }
 
   // Settings and accounts
@@ -47,9 +49,9 @@ export async function runDoctor(version: string): Promise<number> {
   try {
     const env = accountFromEnv();
     accounts = env ? [env] : loadSettings().accounts;
-    if (env) line("ok", `Using the account from ASC_PAYOUT_* variables (vendor ${env.vendor})`);
-    else if (accounts.length === 0) line("fail", "No account set up", "Run: asc-payout setup");
-    else line("ok", `${accounts.length} account(s) in ${settingsFile()}`);
+    if (env) line("ok", t("Using the account from ASC_PAYOUT_* variables (vendor {vendor})", { vendor: env.vendor }));
+    else if (accounts.length === 0) line("fail", t("No account set up"), t("Run: asc-payout setup"));
+    else line("ok", t("{n} account(s) in {file}", { n: accounts.length, file: settingsFile() }));
   } catch (error) {
     line("fail", (error as Error).message);
   }
@@ -57,45 +59,45 @@ export async function runDoctor(version: string): Promise<number> {
   const lastClosed = previous(recentMonths(1)[0]);
   for (const account of accounts) {
     ui.print("");
-    ui.print(`  ${account.name} (vendor ${account.vendor})`);
+    ui.print(`  ${t("{name} (vendor {vendor})", { name: account.name, vendor: account.vendor })}`);
     const keyPath = resolveKeyFile(account.key.keyFile);
     if (!existsSync(keyPath)) {
-      line("fail", `Key file missing: ${keyPath}`, "Run: asc-payout setup > Edit an account > change the key");
+      line("fail", t("Key file missing: {path}", { path: keyPath }), t("Run: asc-payout setup > Edit an account > change the key"));
       continue;
     }
     try {
       createPrivateKey(readKeyFile(account.key));
-      line("ok", `Key ${account.key.keyId} readable`);
+      line("ok", t("Key {id} readable", { id: account.key.keyId }));
     } catch {
-      line("fail", `Key file is not a valid .p8 key: ${keyPath}`, "Download the key again from App Store Connect and run setup.");
+      line("fail", t("Key file is not a valid .p8 key: {path}", { path: keyPath }), t("Download the key again from App Store Connect and run setup."));
       continue;
     }
 
     const sales = await checkSalesAccess(account);
-    line(sales.ok ? "ok" : "fail", sales.ok ? "Sales reports (Trends) readable" : sales.message, sales.ok ? undefined : "The key needs the Finance (or Sales) role, and the vendor number must belong to its team.");
+    line(sales.ok ? "ok" : "fail", sales.ok ? t("Sales reports (Trends) readable") : sales.message, sales.ok ? undefined : t("The key needs the Finance (or Sales) role, and the vendor number must belong to its team."));
 
     const finance = await downloadFinancialReport(account, financeReportDate(lastClosed), true);
     if (finance.status === "ok" || finance.status === "not-published") {
-      line("ok", `Financial Reports (Reports) readable${finance.status === "not-published" ? `; ${monthLabel(lastClosed)} not published yet` : ""}`);
+      line("ok", finance.status === "not-published" ? t("Financial Reports (Reports) readable; {month} not published yet", { month: monthLabel(lastClosed) }) : t("Financial Reports (Reports) readable"));
     } else if (finance.status === "no-access") {
-      line("fail", "Financial Reports: this key can't read them", "Give the key the Finance role in App Store Connect > Users and Access > Integrations.");
+      line("fail", t("Financial Reports: this key can't read them"), t("Give the key the Finance role in App Store Connect > Users and Access > Integrations."));
     } else {
-      line("warn", `Financial Reports: ${finance.message}`);
+      line("warn", t("Financial Reports: {message}", { message: finance.message }));
     }
 
     try {
       const apps = await ascAll<{ id: string }>(account.key, "/v1/apps?limit=200&fields[apps]=name");
-      line("ok", `App names: ${apps.length} app(s)`);
+      line("ok", t("App names: {n} app(s)", { n: apps.length }));
     } catch (error) {
       const denied = error instanceof AscError && error.status === 403;
-      line("warn", denied ? "App names: this key can't list apps; products are shown without app names" : `App names: ${(error as Error).message}`);
+      line("warn", denied ? t("App names: this key can't list apps; products are shown without app names") : t("App names: {message}", { message: (error as Error).message }));
     }
     if (account.catalogKey) {
       try {
         createPrivateKey(readKeyFile(account.catalogKey));
-        line("ok", `In-app purchase key ${account.catalogKey.keyId} readable`);
+        line("ok", t("In-app purchase key {id} readable", { id: account.catalogKey.keyId }));
       } catch (error) {
-        line("warn", `In-app purchase key: ${(error as Error).message}`);
+        line("warn", t("In-app purchase key: {message}", { message: (error as Error).message }));
       }
     }
   }
@@ -108,9 +110,9 @@ export async function runDoctor(version: string): Promise<number> {
   ] as const) {
     try {
       const r = await fetch(url, { signal: AbortSignal.timeout(15_000) });
-      line(r.ok ? "ok" : "warn", `${name}: ${r.ok ? "reachable" : `answered ${r.status}`}`);
+      line(r.ok ? "ok" : "warn", r.ok ? t("{name}: reachable", { name: t(name) }) : t("{name}: answered {status}", { name: t(name), status: r.status }));
     } catch {
-      line("warn", `${name}: not reachable`, "Exchange rates fall back to other sources or stored rates.");
+      line("warn", t("{name}: not reachable", { name: t(name) }), t("Exchange rates fall back to other sources or stored rates."));
     }
   }
 
@@ -119,18 +121,18 @@ export async function runDoctor(version: string): Promise<number> {
   try {
     writeFileAtomic(probe, "ok");
     rmSync(probe, { force: true });
-    line("ok", `Cache folder writable: ${cacheDir()}`);
+    line("ok", t("Cache folder writable: {path}", { path: cacheDir() }));
   } catch (error) {
-    line("fail", `Cache folder not writable: ${(error as Error).message}`, "Set ASC_PAYOUT_CACHE_DIR to a writable folder.");
+    line("fail", t("Cache folder not writable: {error}", { error: (error as Error).message }), t("Set ASC_PAYOUT_CACHE_DIR to a writable folder."));
   }
 
   // Version
   const latest = await latestVersion(10_000);
-  if (latest && compareVersions(latest, version) > 0) line("warn", `Version ${latest.replace(/^v/, "")} is available`, "Run: asc-payout update");
-  else if (latest) line("ok", "Latest version");
+  if (latest && compareVersions(latest, version) > 0) line("warn", t("Version {version} is available", { version: latest.replace(/^v/, "") }), t("Run: asc-payout update"));
+  else if (latest) line("ok", t("Latest version"));
 
   ui.print("");
-  ui.print(failures === 0 ? "  Everything needed works." : `  ${failures} problem(s) found.`);
+  ui.print(`  ${failures === 0 ? t("Everything needed works.") : t("{n} problem(s) found.", { n: failures })}`);
   ui.print("");
   return failures === 0 ? 0 : 1;
 }

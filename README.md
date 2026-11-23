@@ -7,10 +7,10 @@
 - **Reports**: Apple's Financial Report. Final, and what the payment is based on. Published a few days after the month closes.
 - **Trends**: the daily Sales reports of every day in the month, added up. Available while the month is running, with a forecast for the whole month.
 
-One or many accounts (say, a company and a personal developer account), every currency converted at the month-end rate.
+One or many developer accounts, every currency converted at the month-end rate. Also: details per app, refunds and cancellations, profit after Apple Ads, monthly goals. In English or Turkish.
 
 ```
-  Demo Studio  ·  October 2026  ·  Sep 27 - Oct 31, 2026
+  Account 1  ·  October 2026  ·  Sep 27 - Oct 31, 2026
 
   App / product                                   Reports       Trends
   ────────────────────────────────────────────────────────────────────
@@ -26,6 +26,7 @@ One or many accounts (say, a company and a personal developer account), every cu
   Total                                         $1,171.69    $1,144.12
 
   Payment   ~$1,171.69  ·  expected around Dec 3, 2026  (from Reports)
+  Goal      ████████████████ 107%  $1,171.69 of $1,100.00  ·  reached, $71.69 over
   Reports   Apple Financial Report, the final figures.
             Rows match the report's own country summary.
   Trends    35 of 35 days (through Oct 31).
@@ -91,23 +92,97 @@ One key is enough: app names come from your app list, and in-app purchases are m
 Type `asc-payout`. A menu opens; everything the tool can do is in it, no options to learn:
 
 ```
-  asc-payout 1.5.0   All accounts  ·  USD
+  asc-payout 1.6.0   All accounts  ·  USD
 
 ? What would you like to see?
-  t This month so far  November 2026  ·  Nov 1 - Nov 28, 2026  ·  running
-❯ l Last month         October 2026  ·  Sep 27 - Oct 31, 2026
+  t This month so far           November 2026  ·  Nov 1 - Nov 28, 2026  ·  running
+❯ l Last month                  October 2026  ·  Sep 27 - Oct 31, 2026
   m Another month…
-  h History…           months side by side, top apps
-  s Subscriptions…     paying, trials, MRR, cancellations
-  e Export to a file…  CSV for Excel, Numbers, Google Sheets
-  a Account            All accounts
-  o Settings           accounts, currency, notifications, updates
-  d Check my setup     keys, access, clock, network
+  h History…                    months side by side, top apps
+  s Subscriptions…              paying, trials, MRR
+  c Refunds and cancellations…  who leaves, why, trial conversion
+  p Profit after Apple Ads…     revenue, ad spend, ROAS by app
+  e Export to a file…           CSV for Excel, Numbers, Google Sheets
+
+  a Account                     All accounts
+  o Settings                    accounts, goals, Apple Ads, language, updates
+  d Check my setup              keys, access, clock, network
   q Quit
   ↑↓ move · enter select · q quit
 ```
 
-Arrow keys and Enter, or the letter in front of an item. **Esc** always goes back one step, in menus and while setting up an account. On a month: **← →** previous / next month, **↑ ↓** another account, **c** countries, **r** download again, **e** save as CSV, **b** back, **q** quit.
+Arrow keys and Enter, or the letter in front of an item. **Esc** always goes back one step, in menus and while setting up an account. On a month: **← →** previous / next month, **↑ ↓** another account, **c** countries, **d** details of an app, **p** profit after Apple Ads, **r** download again, **e** save as CSV, **b** back, **q** quit.
+
+### App details
+
+On a month, press **d** and pick an app: its products, a bar per day, refunds (units and money, and the share of units sold), and the countries it earned in.
+
+### Refunds and cancellations
+
+`asc-payout churn` (or *Refunds and cancellations…* in the menu), over the last 7, 30 or 90 days:
+
+```
+  Account 1  ·  Refunds and cancellations  ·  last 30 days, Oct 24 - Nov 22, 2026
+
+  App                             Trials  → paid       Cancels  Refunds   Rate
+  ────────────────────────────────────────────────────────────────────────────
+  Photo Editor Pro                   147      16  11%      120        2     1%
+  Task Planner                        87      26  30%       70        0     0%
+  ────────────────────────────────────────────────────────────────────────────
+  Total                              234      42  18%      190        2     1%
+  → paid: trials that became paid in the same period.  Rate: refunded units of all sold (275).
+  Refunded  $13.98
+
+  Week               Trials  → paid  Rate  Cancels
+  Oct 24 - Oct 25         9       1   11%        4  ██████
+  Oct 26 - Nov 1         52       8   15%       41  █████████
+  Nov 2 - Nov 8          63      13   21%       52  ████████████
+  Nov 9 - Nov 15         58       9   16%       50  █████████
+  Nov 16 - Nov 22        52      11   21%       43  ████████████
+
+  Why       Canceled 186  ·  Billing issue 4
+  Billing   21 had a payment problem  ·  14 recovered  ·  4 lost  (78% saved)
+```
+
+Trials started and how many became paid in the same days, cancellations and why (Apple's reason), billing problems and how many Apple recovered, and refunds by app. From the daily subscription event reports and the Sales reports.
+
+### Monthly goals
+
+Settings > Monthly goals: a goal per account, and one for all accounts together, in the currency you choose. The month screen shows how far along you are, and while the month is running, whether the forecast reaches it:
+
+```
+  Goal      ██████████████░░  85%  $851.12 of $1,000.00  ·  on track (forecast ~$1,142.90)
+```
+
+### Profit after Apple Ads
+
+`asc-payout profit` (menu: *Profit after Apple Ads…*, or **p** on a month) puts each app's revenue next to what its Apple Ads campaigns spent in the same days:
+
+```
+  Profit after Apple Ads  ·  October 2026  ·  Sep 27 - Oct 31, 2026
+
+  App                            Revenue    Ad spend      Profit   ROAS  Installs  Per install
+  ────────────────────────────────────────────────────────────────────────────────────────────
+  Photo Editor Pro               $847.22     $310.50     $536.72   2.7x       402        $0.77
+  Task Planner                   $234.50      $96.20     $138.30   2.4x        88        $1.09
+  Weather Glance                  $89.97           —      $89.97      —         —            —
+  ────────────────────────────────────────────────────────────────────────────────────────────
+  Total                        $1,171.69     $406.70     $764.99   2.9x       490        $0.83
+```
+
+Revenue is what Apple pays for the month (Reports, else Trends), so it includes sales without an ad: ROAS here is revenue / ad spend. Campaigns in other currencies are converted like everything else.
+
+Connect it once in Settings > Apple Ads:
+
+1. In Apple Ads > Account Settings > User Management, invite a user with an API role (API Account Read Only is enough) and sign in as that user.
+2. In asc-payout choose *Make a new key for me*: it makes the key pair, keeps the private key in your settings folder and puts the public key on your clipboard.
+3. In Apple Ads > Account Settings > API, paste the public key and save. Type the client ID, team ID and key ID it shows into asc-payout, which checks them with Apple before saving.
+
+Already have a private key (.pem)? Choose *I already have a private key file*.
+
+### Language
+
+The menus and screens are in English or Turkish (Türkçe), following the system language. Change it in Settings > Language, or for one run with `ASC_PAYOUT_LANG=en` / `ASC_PAYOUT_LANG=tr`. `--json`, `--csv` and `--help` are always in English.
 
 ### Options, for scripts
 
@@ -115,7 +190,7 @@ The same things without the menu:
 
 ```
 asc-payout                          choose account and month (defaults: last account, last closed month)
-asc-payout -a personal -m 2026-10   no questions; a part of the account name is enough
+asc-payout -a "account 2" -m 2026-10  no questions; a part of the account name is enough
 asc-payout -a all                   every account, then a combined table
 asc-payout -m 2026-11 -c EUR        a running month, shown in euros
 asc-payout -a all --json            machine-readable output
@@ -123,6 +198,8 @@ asc-payout history -a all           the last 12 months side by side, with your b
 asc-payout -m 2026-10 --by country  where the money came from
 asc-payout history --year 2026 --csv  a year, ready for a spreadsheet
 asc-payout subs                     paying subscribers, trials, MRR and the last 30 days
+asc-payout churn --days 90          refunds, cancellations and why, trial conversion by week
+asc-payout profit -m 2026-10        revenue, Apple Ads spend, profit and ROAS by app
 asc-payout watch                    announce last month's final numbers once Apple publishes them
 ```
 
@@ -140,8 +217,10 @@ Picked from the menus, the month stays on screen: **← →** go to the previous
 | `history [--months N]` | payments of the last N months (default 12), month-on-month change, top apps |
 | `history --year YYYY` | January to December of a year |
 | `subs [--days N]` | active subscriptions per app (paying, trials, billing issues, MRR) and the last N days' trials, conversions, renewals, cancellations, refunds |
+| `churn [--days N]` | per app: trials, trials that became paid, cancellations, refunds; weekly conversion; cancellation reasons; billing problems recovered or lost |
+| `profit [-m YYYY-MM]` | revenue next to Apple Ads spend by app: profit, ROAS, installs, cost per install (needs Apple Ads in Settings) |
 | `watch` | when last month's Financial Report is out: a desktop notification and a line of output, once |
-| `--csv` | CSV instead of the table (month, history, subs) |
+| `--csv` | CSV instead of the table (month, history, subs, churn, profit) |
 | `--no-clear` | keep the screen; by default it is cleared first (also `ASC_PAYOUT_NO_CLEAR=1`) |
 | `setup`, `status`, `demo` | manage accounts, show where files are, try with made-up data |
 | `doctor` | check clock, keys, access to each report, network and cache, with the fix for anything wrong |
@@ -178,7 +257,7 @@ For scripts and CI, an account can come from environment variables instead of se
 
 ## Privacy
 
-Runs on your computer only. It talks to App Store Connect with your key and sends nothing but currency codes and dates to the exchange-rate services. No telemetry. Settings and keys are in `~/.config/asc-payout` (Windows: `%USERPROFILE%\.config\asc-payout`), downloaded reports in `~/.cache/asc-payout`; `asc-payout status` shows the exact folders. Copy the settings folder to move your setup to another computer, and keep it private: it holds your API keys.
+Runs on your computer only. It talks to App Store Connect (and Apple Ads, if you connect it) with your keys and sends nothing but currency codes and dates to the exchange-rate services. No telemetry. Settings and keys are in `~/.config/asc-payout` (Windows: `%USERPROFILE%\.config\asc-payout`), downloaded reports in `~/.cache/asc-payout`; `asc-payout status` shows the exact folders. Copy the settings folder to move your setup to another computer, and keep it private: it holds your API keys.
 
 ## Develop
 

@@ -9,6 +9,8 @@
  * and with ASC_PAYOUT_NO_SPINNER=1.
  */
 
+import { t } from "../i18n";
+
 const FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 // a slow cycle through cyan, blue and magenta (256-color codes)
 const HUES = [51, 45, 39, 33, 63, 99, 135, 171, 135, 99, 63, 33, 39, 45];
@@ -32,7 +34,7 @@ export function startSpinner(stream: NodeJS.WriteStream = process.stderr): Spinn
   const dim = (s: string) => (color ? `\x1b[2m${s}\x1b[22m` : s);
 
   const started = Date.now();
-  let message = "Starting";
+  let message = t("Starting");
   let done = 0;
   let total = 0;
   let unit = "";

@@ -4,10 +4,10 @@
 
 **Apple bu ay bana ne kadar ödeyecek?** `asc-payout` bunu kendi App Store Connect verinizden, Apple'ın mali aylarına göre hesaplar ve iki kaynağı yan yana gösterir:
 
-- **Reports**: Apple'ın Financial Report'u. Kesin rakamdır, ödeme buna göre yapılır. Ay kapandıktan birkaç gün sonra yayınlanır.
-- **Trends**: Ayın her günü için günlük Sales raporlarının toplamı. Ay devam ederken de görünür; ay sonu tahmini de verir.
+- **Raporlar** (Reports): Apple'ın Finansal Raporu (Financial Report). Kesin rakamdır, ödeme buna göre yapılır. Ay kapandıktan birkaç gün sonra yayınlanır.
+- **Trendler** (Trends): Ayın her günü için günlük Satış raporlarının toplamı. Ay devam ederken de görünür; ay sonu tahmini de verir.
 
-Bir veya birden fazla hesap (ör. şirket ve bireysel) desteklenir. Her para birimi ay sonu kuruyla çevrilir.
+Bir veya birden fazla geliştirici hesabı desteklenir. Her para birimi ay sonu kuruyla çevrilir. Ayrıca: uygulama ayrıntıları, iadeler ve iptaller, Apple Ads sonrası kâr, aylık hedefler. Menüler ve ekranlar Türkçe.
 
 Hesap olmadan denemek için: `asc-payout demo` (uydurma rakamlar).
 
@@ -54,15 +54,47 @@ Tek anahtar yeterlidir: uygulama adları uygulama listesinden gelir, uygulama i�
 
 ## Kullanım
 
-`asc-payout` yazın. Bir menü açılır; aracın yapabildiği her şey içindedir, parametre bilmeye gerek yoktur: bu ay, geçen ay, başka bir ay, geçmiş, abonelikler, dosyaya aktarma (Excel için CSV), hesap seçimi, ayarlar (hesaplar, para birimi, bildirimler, güncellemeler) ve kurulum kontrolü.
+`asc-payout` yazın. Bir menü açılır; aracın yapabildiği her şey içindedir, parametre bilmeye gerek yoktur: bu ay, geçen ay, başka bir ay, geçmiş, abonelikler, iadeler ve iptaller, Apple Ads sonrası kâr, dosyaya aktarma (Excel için CSV), hesap seçimi, ayarlar (hesaplar, para birimi, aylık hedefler, Apple Ads, dil, bildirimler, güncellemeler) ve kurulum kontrolü.
 
-Ok tuşları ve Enter ya da öğenin önündeki harf. **Esc** her yerde bir adım geri götürür; hesap eklerken de. Bir ay ekranındayken: **← →** önceki/sonraki ay, **↑ ↓** başka hesap, **c** ülkeler, **r** yeniden indir, **e** CSV olarak kaydet, **b** geri, **q** çıkış.
+Ok tuşları ve Enter ya da öğenin önündeki harf. **Esc** her yerde bir adım geri götürür; hesap eklerken de. Bir ay ekranındayken: **← →** önceki/sonraki ay, **↑ ↓** başka hesap, **c** ülkeler, **d** bir uygulamanın ayrıntıları, **p** Apple Ads sonrası kâr, **r** yeniden indir, **e** CSV olarak kaydet, **b** geri, **q** çıkış.
+
+### Uygulama ayrıntıları
+
+Bir ay ekranında **d**'ye basıp bir uygulama seçin: ürünleri, gün gün satışları, iadeleri (adet, tutar ve satılanlara oranı) ve kazandığı ülkeler.
+
+### İadeler ve iptaller
+
+`asc-payout churn` (menüde *İadeler ve iptaller…*), son 7, 30 veya 90 gün için uygulama bazında: başlayan denemeler ve bunlardan kaçının ödemeye geçtiği, iptaller ve nedenleri (Apple'ın verdiği neden), ödeme sorunları ve Apple'ın kurtardıkları, iadeler ve iade oranı. Denemeden ödemeye geçiş haftalık olarak da gösterilir.
+
+### Aylık hedefler
+
+Ayarlar > Aylık hedefler: her hesap için ve tüm hesaplar için birer hedef, istediğiniz para biriminde. Ay ekranı hedefin ne kadarına ulaştığınızı gösterir; ay sürerken tahminin hedefe yetip yetmediğini de söyler:
+
+```
+  Hedef     ██████████████░░  85%  $851,12 / $1.000,00  ·  yolunda (tahmin ~$1.142,90)
+```
+
+### Apple Ads sonrası kâr
+
+`asc-payout profit` (menüde *Apple Ads sonrası kâr…* veya ay ekranında **p**) her uygulamanın gelirini, Apple Ads kampanyalarının aynı günlerdeki harcamasının yanına koyar: kâr, ROAS, yükleme ve yükleme başına maliyet. Gelir, Apple'ın o ay için ödediği tutardır (Raporlar, yoksa Trendler); reklamsız satışları da içerir, yani buradaki ROAS gelir / reklam harcamasıdır.
+
+Ayarlar > Apple Ads'den bir kez bağlanır:
+
+1. Apple Ads > Hesap Ayarları > Kullanıcı Yönetimi'nden API rolü olan bir kullanıcı davet edin (API Account Read Only yeterli) ve o kullanıcıyla giriş yapın.
+2. asc-payout'ta *Benim için yeni bir anahtar oluştur*'u seçin: anahtar çiftini oluşturur, özel anahtarı ayarlar klasörünüzde saklar ve açık anahtarı panoya kopyalar.
+3. Apple Ads > Hesap Ayarları > API'de açık anahtarı yapıştırıp kaydedin. Gösterilen Client ID, Team ID ve Key ID'yi asc-payout'a girin; kaydetmeden önce Apple'da kontrol edilir.
+
+Elinizde özel anahtar (.pem) varsa *Zaten bir özel anahtar dosyam var*'ı seçin.
+
+### Dil
+
+Menüler ve ekranlar sistem diline göre Türkçe veya İngilizcedir. Ayarlar > Dil'den değiştirilebilir; tek bir çalıştırma için `ASC_PAYOUT_LANG=tr` veya `ASC_PAYOUT_LANG=en`. `--json`, `--csv` ve `--help` her zaman İngilizcedir.
 
 Betikler için aynı şeyler parametrelerle de yapılabilir:
 
 ```
 asc-payout                          hesap ve ay sorulur (varsayılan: son hesap, son kapanan ay)
-asc-payout -a bireysel -m 2026-10   soru sormaz; hesap adının bir parçası yeterli
+asc-payout -a "hesap 2" -m 2026-10   soru sormaz; hesap adının bir parçası yeterli
 asc-payout -a all                   tüm hesaplar ve toplam tablo
 asc-payout -m 2026-11 -c TRY        devam eden ay, TL olarak
 asc-payout -a all --json            JSON çıktı
@@ -75,6 +107,8 @@ Menüden seçilen ay ekranda kalır: **← →** önceki/sonraki ay, **↑ ↓**
 `2026-10` gibi bir ay, adını taşıdığı mali aydır: Ekim 2026 = 27 Eylül - 31 Ekim 2026.
 
 Bir sorun olursa `asc-payout doctor` saati, anahtarları, her rapora erişimi, ağı ve önbelleği tek tek kontrol eder ve düzeltme yolunu yazar. `asc-payout update` en son sürümü kurar.
+
+`asc-payout churn --days 90` iadeleri, iptalleri ve haftalık deneme dönüşümünü; `asc-payout profit -m 2026-10` uygulama bazında gelir, reklam harcaması, kâr ve ROAS'ı verir.
 
 `asc-payout subs` aktif aboneleri (ödeyen, denemede, ödeme sorunlu), uygulama bazında MRR'ı ve son 30 günün denemelerini, ödemeye geçişlerini, yenilemelerini, iptallerini gösterir. `asc-payout history --year 2026 --csv` bir yılı tabloya aktarılacak şekilde verir. `asc-payout watch` geçen ayın Financial Report'u yayınlanınca bir kez masaüstü bildirimi gönderir; her sabah çalıştırmak için Windows'ta Görev Zamanlayıcı, macOS/Linux'ta cron kullanılabilir.
 
@@ -95,7 +129,7 @@ Bir şey yüklenirken ekranda hangi adımda olduğunu, günlük raporlar için i
 
 ## Gizlilik
 
-Sadece bilgisayarınızda çalışır; kur servislerine yalnızca para birimi kodu ve tarih gider, telemetri yoktur. Ayarlar ve anahtarlar `~/.config/asc-payout` klasöründedir (`asc-payout status` tam yolu gösterir). Bu klasörü kopyalayarak kurulumu başka bilgisayara taşıyabilirsiniz; içinde API anahtarlarınız olduğu için gizli tutun.
+Sadece bilgisayarınızda çalışır; anahtarlarınızla yalnızca App Store Connect'e (bağladıysanız Apple Ads'e de) bağlanır, kur servislerine yalnızca para birimi kodu ve tarih gider, telemetri yoktur. Ayarlar ve anahtarlar `~/.config/asc-payout` klasöründedir (`asc-payout status` tam yolu gösterir). Bu klasörü kopyalayarak kurulumu başka bilgisayara taşıyabilirsiniz; içinde API anahtarlarınız olduğu için gizli tutun.
 
 ## Lisans
 

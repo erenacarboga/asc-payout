@@ -2,6 +2,7 @@ import { learnParents, loadCatalog } from "../asc/catalog";
 import { downloadDetailReport, downloadFinancialReport, downloadSalesDays } from "../asc/reports";
 import { addDays, eachDay, financeReportDate, fiscalPeriod, monthLabel, today, toMs, type YearMonth } from "../calendar/fiscal";
 import type { Account } from "../config/settings";
+import { t } from "../i18n";
 import { convert, getRates } from "../money/rates";
 import { readSettlement } from "../reports/detail";
 import { readFinancialReport } from "../reports/finance";
@@ -42,7 +43,7 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
   let period = fiscalPeriod(ym);
 
   // 1) Reports: the Financial Report exists only after the month closes
-  opts.log(`${account.name} · Financial Report, ${monthLabel(ym)}`);
+  opts.log(`${account.name} · ${t("Financial Report, {month}", { month: monthLabel(ym) })}`);
   let reportsStatus: MonthResult["reports"]["status"] = "in-progress";
   let reportsMessage: string | undefined;
   let financial: ReturnType<typeof readFinancialReport> | null = null;
@@ -67,8 +68,8 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
   const lastDay = period.end < now ? period.end : now;
   const dates = !skipTrends && period.start <= lastDay ? eachDay(period.start, lastDay) : [];
   const days = eachDay(period.start, period.end).length;
-  if (dates.length > 0) opts.log(`${account.name} · daily Sales reports`);
-  const salesDays = await downloadSalesDays(account, dates, opts.useCache, (d, t) => opts.progress?.(d, t, "days"));
+  if (dates.length > 0) opts.log(`${account.name} · ${t("daily Sales reports")}`);
+  const salesDays = await downloadSalesDays(account, dates, opts.useCache, (d, n) => opts.progress?.(d, n, t("days")));
 
   const available = salesDays.filter((d) => d.status === "sales" || d.status === "no-sales");
   const failed = salesDays.filter((d) => d.status === "failed");
@@ -76,17 +77,19 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
   const byError = new Map<string, string[]>();
   for (const d of failed) byError.set(d.error ?? "error", [...(byError.get(d.error ?? "error") ?? []), d.date]);
   for (const [error, list] of byError) {
-    problems.push(`${list.length} day(s) could not be read (${list[0]}${list.length > 1 ? ` to ${list[list.length - 1]}` : ""}): ${error}`);
+    const range = list.length > 1 ? t("{from} to {to}", { from: list[0], to: list[list.length - 1] }) : list[0];
+    problems.push(t("{n} day(s) could not be read ({days}): {error}", { n: list.length, days: range, error }));
   }
   if (!skipTrends && toMs(period.start) < Date.now() - DAILY_RETENTION_DAYS * DAY_MS) {
-    problems.push("Apple keeps daily Sales reports for about a year, so days older than that are missing.");
+    problems.push(t("Apple keeps daily Sales reports for about a year, so days older than that are missing."));
   }
 
   if (!financial && available.length === 0 && failed.length > 0) {
+    const w = Math.max(t("Reports").length, t("Trends").length) + 2;
     throw new Error(
-      `Nothing could be read for ${account.name}, ${monthLabel(ym)}.\n` +
-        `  Reports: ${reportsMessage ?? reportsStatus}\n` +
-        `  Trends:  ${problems[0]}`,
+      `${t("Nothing could be read for {account}, {month}.", { account: account.name, month: monthLabel(ym) })}\n` +
+        `  ${`${t("Reports")}:`.padEnd(w)}${reportsMessage ?? reportsStatus}\n` +
+        `  ${`${t("Trends")}:`.padEnd(w)}${problems[0]}`,
     );
   }
 
@@ -94,7 +97,7 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
   const trendsProducts = readSalesReports(salesTexts);
 
   // 3) App names and which app each in-app purchase belongs to
-  opts.log(`${account.name} · app names`);
+  opts.log(`${account.name} · ${t("app names")}`);
   const catalog = await loadCatalog(account, opts.refreshCatalog, opts.warn ?? opts.log);
   learnParents(account, catalog, trendsProducts.values());
 
@@ -104,7 +107,7 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
     ...Object.keys(totalsByCurrency(financial?.products.values() ?? [])),
     ...Object.keys(totalsByCurrency(trendsProducts.values())),
   ]);
-  opts.log(`${account.name} · exchange rates for ${currencies.size} currenc${currencies.size === 1 ? "y" : "ies"}`);
+  opts.log(`${account.name} · ${t(currencies.size === 1 ? "exchange rates for {n} currency" : "exchange rates for {n} currencies", { n: currencies.size })}`);
   const table = await getRates(currencies, opts.currency, period.end);
 
   const apps = groupByApp(financial?.products ?? null, trendsProducts, catalog, table);
@@ -133,7 +136,7 @@ export async function computeMonth(account: Account, ym: YearMonth, opts: MonthO
   // 7) Why Reports and Trends differ: sales settled from earlier, and sales settling later
   let settlement: MonthResult["settlement"];
   if (financial && opts.settlement !== false && !skipTrends) {
-    opts.log(`${account.name} · Financial Detail Report`);
+    opts.log(`${account.name} · ${t("Financial Detail Report")}`);
     const detail = await downloadDetailReport(account, financeReportDate(ym), opts.useCache);
     const split = detail.status === "ok" ? readSettlement(detail.text, period.start) : null;
     // only when the detail adds up to exactly the Financial Report

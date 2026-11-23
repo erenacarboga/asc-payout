@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { readJson, writeFileAtomic } from "../config/files";
 import { vendorCacheDir } from "../config/paths";
 import type { Account, ApiKey } from "../config/settings";
+import { t } from "../i18n";
 import type { Product } from "../reports/tsv";
 import { ascAll } from "./client";
 
@@ -79,10 +80,10 @@ export async function loadCatalog(account: Account, refresh: boolean, log: (msg:
       try {
         catalog.apps = await listApps(account.catalogKey);
       } catch (inner) {
-        log(`Could not list apps (${(inner as Error).message}); products are shown ungrouped.`);
+        log(t("Could not list apps ({error}); products are shown ungrouped.", { error: (inner as Error).message }));
       }
     } else {
-      log(`Could not list apps (${(error as Error).message}); products are shown ungrouped.`);
+      log(t("Could not list apps ({error}); products are shown ungrouped.", { error: (error as Error).message }));
     }
   }
 
@@ -92,7 +93,7 @@ export async function loadCatalog(account: Account, refresh: boolean, log: (msg:
       Object.assign(catalog.parents, found.parents);
       Object.assign(catalog.names, found.names);
     } catch (error) {
-      log(`Could not list in-app purchases (${(error as Error).message}).`);
+      log(t("Could not list in-app purchases ({error}).", { error: (error as Error).message }));
     }
   }
 
@@ -137,13 +138,13 @@ function siblingParent(catalog: Catalog, productId: string): string | undefined 
 }
 
 /** The app a product belongs to, or null when unknown. */
-export function appOf(catalog: Catalog, product: Pick<Product, "id" | "appleId" | "parentSku">): { key: string; name: string } | null {
+export function appOf(catalog: Catalog, product: Pick<Product, "id" | "appleId" | "parentSku">): { key: string; name: string; id?: string } | null {
   const parentSku = product.parentSku || catalog.parents[product.id] || siblingParent(catalog, product.id);
   const app =
     (parentSku && catalog.apps.find((a) => a.sku === parentSku)) ||
     catalog.apps.find((a) => a.sku === product.id) ||
     (product.appleId && catalog.apps.find((a) => a.id === product.appleId)) ||
     null;
-  if (app) return { key: app.sku, name: app.name };
+  if (app) return { key: app.sku, name: app.name, id: app.id };
   return parentSku ? { key: parentSku, name: parentSku } : null;
 }

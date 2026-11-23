@@ -9,7 +9,7 @@ import { ui } from "../src/cli/ui";
 import { downloadSalesDays } from "../src/asc/reports";
 import { durationInDays, readSubscriptionEvents, readSubscriptionSnapshot } from "../src/reports/subscriptions";
 import { freshAccounts, serve, world } from "./fake-asc";
-import { financialReport } from "./samples";
+import { financialReport, salesDayB } from "./samples";
 
 const realFetch = globalThis.fetch;
 const realUi = { ...ui };
@@ -164,5 +164,104 @@ describe("watch", () => {
     output.length = 0;
     await run(["watch"]);
     expect(output.join("\n")).toContain("already announced");
+  });
+});
+
+describe("refunds and cancellations", () => {
+  test("trials, conversions, cancellations with reasons, billing and refunds", async () => {
+    freshAccounts([["Notes Inc", "80000001"]]);
+    const yesterday = addDays(today(), -1);
+    const w = world({
+      apps: [{ id: "900001", sku: "app.notes", name: "Notes" }, { id: "900002", sku: "app.paint", name: "Paint" }],
+      sales: { [yesterday]: salesDayB },
+    });
+    serve(w);
+    const header = ["Event Date", "Event", "App Name", "App Apple ID", "Subscription Name", "Cancellation Reason", "Quantity"].join("\t");
+    const day = [
+      header,
+      ["", "Start Introductory Offer", "Notes", "900001", "Plus Weekly", "", "6"].join("\t"),
+      ["", "Paid Subscription from Introductory Offer", "Notes", "900001", "Plus Weekly", "", "2"].join("\t"),
+      ["", "Subscribe", "Notes", "900001", "Plus Yearly", "", "1"].join("\t"),
+      ["", "Cancel", "Notes", "900001", "Plus Weekly", "Price", "3"].join("\t"),
+      ["", "Cancel", "Notes", "900001", "Plus Weekly", "", "1"].join("\t"),
+      ["", "Billing Retry from Paid Subscription", "Notes", "900001", "Plus Weekly", "", "2"].join("\t"),
+      ["", "Renewal from Billing Retry", "Notes", "900001", "Plus Weekly", "", "1"].join("\t"),
+      ["", "Canceled from Billing Retry", "Notes", "900001", "Plus Weekly", "", "1"].join("\t"),
+    ].join("\n");
+    const inner = globalThis.fetch;
+    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(String(input));
+      if (url.searchParams.get("filter[reportType]") === "SUBSCRIPTION_EVENT") {
+        if (url.searchParams.get("filter[reportDate]") === yesterday) return new Response(Bun.gzipSync(Buffer.from(day)), { status: 200 });
+        return new Response(JSON.stringify({ errors: [{ status: "404", detail: "There were no sales for the date specified." }] }), { status: 404 });
+      }
+      return inner(input, init);
+    }) as unknown as typeof fetch;
+
+    expect(await run(["churn", "--days", "7", "--json"])).toBe(0);
+    const r = JSON.parse(output.join("\n")).churn[0];
+    expect(r.window).toMatchObject({ days: 7, to: yesterday, available: 7 });
+    const notes = r.apps.find((a: { app: string }) => a.app === "Notes");
+    expect(notes).toMatchObject({ trialStarts: 6, conversions: 2, newPaid: 1, cancellations: 5, sold: 1, refunded: 1 });
+    expect(notes.refundAmount).toBeCloseTo(4.24, 6);
+    expect(r.reasons).toEqual({ Price: 3, "Not given": 1 });
+    expect(r.billing).toEqual({ entered: 2, recovered: 1, lost: 1 });
+    expect(r.weeks.at(-1)).toMatchObject({ trialStarts: 6, conversions: 2, cancellations: 5 });
+
+    output = [];
+    expect(await run(["churn", "--days", "7", "--csv"])).toBe(0);
+    const csv = output.join("\n").split("\r\n");
+    expect(csv[0]).toStartWith("account,from,to,app,trial_starts");
+    expect(csv.some((l) => l.includes(",Notes,6,2,1,5,1,1,4.24,USD"))).toBe(true);
+
+    output = [];
+    expect(await run(["churn", "--days", "7"])).toBe(0);
+    const text = output.join("\n");
+    expect(text).toContain("Refunds and cancellations");
+    expect(text).toContain("Why       Price 3");
+    expect(text).toContain("1 recovered");
+  });
+});
+
+describe("monthly goals", () => {
+  test("amounts typed in any common way", async () => {
+    const { parseAmount } = await import("../src/cli/setup");
+    expect(parseAmount("2500")).toBe(2500);
+    expect(parseAmount("2,500")).toBe(2500);
+    expect(parseAmount("2.500")).toBe(2500);
+    expect(parseAmount("2.500,50")).toBe(2500.5);
+    expect(parseAmount("2,500.50")).toBe(2500.5);
+    expect(parseAmount("$ 1 200")).toBe(1200);
+    expect(parseAmount("12,5")).toBe(12.5);
+    expect(parseAmount("abc")).toBeNull();
+    expect(parseAmount("0")).toBeNull();
+    expect(parseAmount("")).toBeNull();
+  });
+
+  test("progress line: reached, on track, short, to go", async () => {
+    const { goalLine } = await import("../src/earnings/render");
+    expect(goalLine(1200, 1000, "USD")).toContain("120%  $1,200.00 of $1,000.00  ·  reached, $200.00 over");
+    expect(goalLine(500, 1000, "USD", 1100)).toContain("50%  $500.00 of $1,000.00  ·  on track (forecast ~$1,100.00)");
+    expect(goalLine(500, 1000, "USD", 900)).toContain("forecast ~$900.00, $100.00 short");
+    expect(goalLine(250, 1000, "USD")).toContain("25%  $250.00 of $1,000.00  ·  $750.00 to go");
+    expect(goalLine(250, 1000, "USD")).toContain("████░░░░░░░░░░░░");
+  });
+
+  test("goals are kept in settings, bad ones dropped, and converted to the display currency", async () => {
+    freshAccounts([["Notes Inc", "80000001"]]);
+    const { loadSettings, saveSettings } = await import("../src/config/settings");
+    const s = loadSettings();
+    saveSettings({ ...s, goals: { "80000001": { amount: 100, currency: "EUR" }, all: { amount: -5, currency: "USD" } } as never });
+    const loaded = loadSettings();
+    expect(loaded.goals).toEqual({ "80000001": { amount: 100, currency: "EUR" } });
+    serve(world({ rates: { EUR: 1.1 } }));
+    const { goalsIn } = await import("../src/cli/run");
+    const goals = await goalsIn(loaded.goals, "USD");
+    expect(goals.get("80000001")).toBeCloseTo(110, 6);
+  });
+
+  test("the demo shows a goal", async () => {
+    expect(await run(["demo"])).toBe(0);
+    expect(output.join("\n")).toMatch(/Goal {6}█+░* +\d+%/);
   });
 });

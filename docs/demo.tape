@@ -10,7 +10,7 @@ Set Padding 18
 Set TypingSpeed 45ms
 
 Hide
-Type "export PATH=$PWD/bin:$PATH && clear"
+Type "export PATH=$PWD/bin:$PATH ASC_PAYOUT_LANG=en && clear"
 Enter
 Show
 
@@ -27,6 +27,10 @@ Sleep 1500ms
 Type "q"
 Sleep 1s
 Type "asc-payout demo -m $(date +%Y-%m)"
+Sleep 400ms
+Enter
+Sleep 5s
+Type "ASC_PAYOUT_LANG=tr asc-payout demo -m $(date +%Y-%m)"
 Sleep 400ms
 Enter
 Sleep 5s

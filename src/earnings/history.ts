@@ -1,5 +1,6 @@
 import { fiscalPeriod, monthLabel, today, type YearMonth } from "../calendar/fiscal";
 import type { Account } from "../config/settings";
+import { t } from "../i18n";
 import { money } from "../money/format";
 import type { MonthResult } from "./model";
 import { computeMonth, type MonthOptions } from "./month";
@@ -49,25 +50,29 @@ export function renderHistory(histories: AccountHistory[], currency: string, tit
   const several = histories.length > 1;
   const NAME = 16;
   const COL = several ? 13 : 14;
+  const CHANGE = Math.max(9, t("vs prev").length + 1);
   const out: string[] = [];
 
   const totals = Array.from({ length: months }, (_, i) => histories.reduce((s, h) => s + cents(h.months[i]?.payment.amount ?? 0), 0));
   const max = Math.max(0, ...totals);
-  const barWidth = Math.max(8, 74 - NAME - COL * (several ? histories.length + 1 : 1) - 9);
+  const barWidth = Math.max(8, 74 - NAME - COL * (several ? histories.length + 1 : 1) - CHANGE);
 
   out.push("");
-  out.push(bold(`  History  ·  ${several ? "all accounts" : histories[0].name}  ·  ${title ?? `last ${months} months`}`) + dim("  (payments by Apple fiscal month)"));
+  out.push(
+    bold(`  ${t("History")}  ·  ${several ? t("all accounts") : histories[0].name}  ·  ${title ?? t("last {n} months", { n: months })}`) +
+      dim(`  (${t("payments by Apple fiscal month")})`),
+  );
   out.push("");
-  const heads = several ? [...histories.map((h) => h.name.slice(0, COL - 2)), "Total"] : ["Payment"];
-  out.push(dim(`  ${"Month".padEnd(NAME)}${heads.map((h) => h.padStart(COL)).join("")}${"vs prev".padStart(9)}`));
-  out.push("  " + "─".repeat(NAME + COL * heads.length + 9 + barWidth + 1));
+  const heads = several ? [...histories.map((h) => h.name.slice(0, COL - 2)), t("Total")] : [t("Payment")];
+  out.push(dim(`  ${t("Month").padEnd(NAME)}${heads.map((h) => h.padStart(COL)).join("")}${t("vs prev").padStart(CHANGE)}`));
+  out.push("  " + "─".repeat(NAME + COL * heads.length + CHANGE + barWidth + 1));
 
   for (let i = 0; i < months; i++) {
     const ym = ymOf(i);
     const label = ym ? monthLabel(ym) : "?";
     const cells = histories.map((h) => {
       const r = h.months[i];
-      return r === null ? "error" : (estimate(r) ? "~" : "") + m(r.payment.amount);
+      return r === null ? t("error") : (estimate(r) ? "~" : "") + m(r.payment.amount);
     });
     if (several) cells.push((histories.some((h) => estimate(h.months[i])) ? "~" : "") + m(totals[i]));
     const prev = totals[i + 1];
@@ -75,16 +80,16 @@ export function renderHistory(histories: AccountHistory[], currency: string, tit
     const changeText = change === null ? "" : `${change >= 0 ? "+" : ""}${Math.round(change * 100)}%`;
     const running = histories.some((h) => h.months[i]?.reports.status === "in-progress");
     out.push(
-      `  ${(label + (running ? "*" : "")).padEnd(NAME)}${cells.map((c) => c.padStart(COL)).join("")}${changeText.padStart(9)} ${dim(bar(totals[i], max, barWidth))}`,
+      `  ${(label + (running ? "*" : "")).padEnd(NAME)}${cells.map((c) => c.padStart(COL)).join("")}${changeText.padStart(CHANGE)} ${dim(bar(totals[i], max, barWidth))}`,
     );
   }
 
   const closed = totals.filter((_, i) => !histories.some((h) => h.months[i]?.reports.status === "in-progress"));
   const sum = totals.reduce((a, b) => a + b, 0);
   const avg = closed.length ? closed.reduce((a, b) => a + b, 0) / closed.length : 0;
-  out.push("  " + "─".repeat(NAME + COL * heads.length + 9 + barWidth + 1));
-  out.push(bold(`  ${`${months} months`.padEnd(NAME)}${m(sum).padStart(COL * heads.length)}`) + dim(`   average of closed months ${m(avg)}`));
-  out.push(dim("  * month still running: forecast.  ~ estimate from Trends (no Financial Report)."));
+  out.push("  " + "─".repeat(NAME + COL * heads.length + CHANGE + barWidth + 1));
+  out.push(bold(`  ${t("{n} months", { n: months }).padEnd(NAME)}${m(sum).padStart(COL * heads.length)}`) + dim(`   ${t("average of closed months {amount}", { amount: m(avg) })}`));
+  out.push(dim(`  ${t("* month still running: forecast.  ~ estimate from Trends (no Financial Report).")}`));
 
   // Biggest apps over the period
   const apps = new Map<string, number>();
@@ -99,7 +104,7 @@ export function renderHistory(histories: AccountHistory[], currency: string, tit
   const appSum = [...apps.values()].reduce((a, b) => a + Math.max(0, b), 0);
   if (top.length > 0) {
     out.push("");
-    out.push(dim(`  ${"Top apps".padEnd(40)}${"Total".padStart(13)}${"Share".padStart(8)}`));
+    out.push(dim(`  ${t("Top apps").padEnd(40)}${t("Total").padStart(13)}${t("Share").padStart(8)}`));
     for (const [name, v] of top) {
       const share = appSum > 0 ? v / appSum : 0;
       out.push(`  ${(name.length > 39 ? name.slice(0, 38) + "…" : name).padEnd(40)}${m(v).padStart(13)}${`${Math.round(share * 100)}%`.padStart(8)} ${dim(bar(share, top[0][1] / appSum, 12))}`);
