@@ -58,7 +58,7 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/install.ps1 | iex
 ```
 
-Builds for Windows (x64, ARM64), macOS (Apple silicon, Intel) and Linux (x64, arm64, and musl for Alpine). The installer checks the SHA-256 of the download and puts `asc-payout` on your PATH: on Windows in your user PATH, on macOS and Linux by adding one line to your shell's startup file (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` or fish config; skip with `ASC_PAYOUT_NO_MODIFY_PATH=1`). Open a new terminal afterwards and type `asc-payout`. Run the installer again to update.
+Builds for Windows (x64, ARM64), macOS (Apple silicon, Intel) and Linux (x64, arm64, and musl for Alpine). The installer checks the SHA-256 of the download and puts `asc-payout` on your PATH: on Windows in your user PATH, on macOS and Linux by adding one line to your shell's startup file (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` or fish config). `ASC_PAYOUT_NO_MODIFY_PATH=1` leaves PATH alone. Open a new terminal afterwards and type `asc-payout`. Run the installer again to update.
 
 
 ## Set up

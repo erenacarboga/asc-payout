@@ -5,6 +5,7 @@
 # Installs the latest release after checking its SHA-256 and adds it to your PATH.
 #   $env:ASC_PAYOUT_VERSION = "v1.0.0"   install that version instead of the latest
 #   $env:ASC_PAYOUT_BIN_DIR = "C:\tools" install somewhere else
+#   $env:ASC_PAYOUT_NO_MODIFY_PATH = "1"   leave your PATH as it is
 # If the direct download fails (a proxy, for example) and the GitHub CLI is installed, it is used instead.
 
 # Everything runs in its own scope so nothing leaks into your PowerShell session.
@@ -51,7 +52,7 @@
 
         $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
         if (-not $userPath) { $userPath = "" }
-        if (($userPath -split ';') -notcontains $binDir) {
+        if (-not $env:ASC_PAYOUT_NO_MODIFY_PATH -and ($userPath -split ';') -notcontains $binDir) {
             [Environment]::SetEnvironmentVariable("Path", ((@($userPath.TrimEnd(';'), $binDir) | Where-Object { $_ }) -join ';'), "User")
             $env:Path = "$env:Path;$binDir"
             Write-Host "Added $binDir to your PATH (new terminals will find asc-payout)."

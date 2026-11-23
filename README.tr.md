@@ -29,7 +29,7 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/install.ps1 | iex
 ```
 
-Kurulum `asc-payout` komutunu PATH'e ekler: Windows'ta kullanıcı PATH'ine, macOS ve Linux'ta kabuğun ayar dosyasına (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` veya fish) bir satır yazarak (`ASC_PAYOUT_NO_MODIFY_PATH=1` ile kapatılabilir). Sonra yeni bir terminal açıp `asc-payout` yazmanız yeterli. Güncellemek için aynı komut tekrar çalıştırılır.
+Kurulum `asc-payout` komutunu PATH'e ekler: Windows'ta kullanıcı PATH'ine, macOS ve Linux'ta kabuğun ayar dosyasına (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` veya fish) bir satır yazarak. `ASC_PAYOUT_NO_MODIFY_PATH=1` verilirse PATH'e dokunmaz. Sonra yeni bir terminal açıp `asc-payout` yazmanız yeterli. Güncellemek için aynı komut tekrar çalıştırılır.
 
 ## Hesap ekleme
 
