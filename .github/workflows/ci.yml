@@ -12,7 +12,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # macOS runners don't start for this private repository; they join once it is public
+        os: ${{ github.event.repository.private && fromJSON('["ubuntu-latest","windows-latest"]') || fromJSON('["ubuntu-latest","windows-latest","macos-latest"]') }}
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2.2.0
