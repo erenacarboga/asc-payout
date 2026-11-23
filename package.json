@@ -1,0 +1,30 @@
+{
+  "name": "asc-payout",
+  "version": "1.0.0",
+  "description": "What Apple will pay you, per Apple fiscal month: Financial Reports and Sales Trends side by side, for one or many App Store Connect accounts",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erenacarboga/asc-payout"
+  },
+  "bin": {
+    "asc-payout": "./bin/asc-payout"
+  },
+  "scripts": {
+    "dev": "bun run src/main.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p .",
+    "build": "bun build src/main.ts --compile --outfile bin/asc-payout"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.8.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "bun": ">=1.2.0"
+  }
+}

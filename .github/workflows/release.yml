@@ -1,0 +1,41 @@
+name: Release
+
+# Push a tag such as v1.0.1: tests run, every platform is built and a release is published.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+
+      - name: Check the tag matches package.json
+        run: |
+          version="$(bun -e 'console.log(require("./package.json").version)')"
+          [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME but package.json says $version"; exit 1; }
+
+      - name: Build
+        run: |
+          mkdir -p release
+          for target in darwin-arm64 darwin-x64 linux-x64 linux-arm64 windows-x64; do
+            out="release/asc-payout-$target"
+            [ "$target" = windows-x64 ] && out="$out.exe"
+            bun build src/main.ts --compile --minify --target="bun-$target" --outfile "$out"
+          done
+          release/asc-payout-linux-x64 --version
+          cp install.sh install.ps1 release/
+          cd release && sha256sum asc-payout-* > SHA256SUMS
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: release/*
+          generate_release_notes: true

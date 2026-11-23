@@ -1,0 +1,14 @@
+node_modules/
+bin/
+release/
+*.exe
+
+# Never commit credentials
+*.p8
+.env
+.env.*
+
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
