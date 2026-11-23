@@ -1,5 +1,6 @@
 import { emitKeypressEvents } from "node:readline";
 import { ask, pick, yesNo, type AskConfig, type Back, type MenuConfig, type Quit } from "./prompts";
+import { clearLoadingLine, redrawLoadingLine } from "./spinner";
 
 /**
  * Everything that talks to the person at the terminal goes through here, so tests can
@@ -15,11 +16,15 @@ export const ui = {
   interactive: (): boolean => !!process.stdin.isTTY && !!process.stdout.isTTY,
   /** Results (stdout) */
   print: (text: string): void => {
+    clearLoadingLine();
     process.stdout.write(text.endsWith("\n") ? text : text + "\n");
+    redrawLoadingLine();
   },
   /** Progress and problems (stderr) */
   note: (text: string): void => {
+    clearLoadingLine();
     process.stderr.write(text.endsWith("\n") ? text : text + "\n");
+    redrawLoadingLine();
   },
   /** Clean screen (screen and scrollback), like clear / cls. Only on a terminal. */
   clear: (): void => {

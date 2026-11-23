@@ -21,7 +21,7 @@ import { demoResults } from "./demo";
 import { runDoctor } from "./doctor";
 import { BACK, QUIT } from "./prompts";
 import { runSetup, showStatus } from "./setup";
-import { startSpinner } from "./spinner";
+import { startSpinner, withSpinner } from "./spinner";
 import { ui } from "./ui";
 import { cleanUpAfterUpdate, offerUpdate, runUpdate, updateHint } from "./update";
 import { runWatch } from "./watch";
@@ -147,7 +147,7 @@ async function collectMonth(accounts: Account[], ym: YearMonth, currency: string
 
 async function showMonth(accounts: Account[], ym: YearMonth, currency: string, args: Args): Promise<AccountRow[]> {
   const rows = await collectMonth(accounts, ym, currency, args);
-  const goals = args.json || args.csv ? new Map() : await goalsIn(loadSettings().goals, currency);
+  const goals = args.json || args.csv ? new Map() : await withSpinner(t("Exchange rates"), () => goalsIn(loadSettings().goals, currency), 300);
   printResults(rows, currency, args, goals);
   return rows;
 }

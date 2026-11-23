@@ -8,6 +8,7 @@ import { writeFileAtomic } from "../config/files";
 import { cacheDir, resolveKeyFile, settingsFile } from "../config/paths";
 import { accountFromEnv, loadSettings, readKeyFile, type Account } from "../config/settings";
 import { t } from "../i18n";
+import { withSpinner } from "./spinner";
 import { ui } from "./ui";
 import { compareVersions, latestVersion } from "./update";
 
@@ -19,7 +20,12 @@ const clockOff = (skew: number) => (skew > 0 ? t("Clock is {n} s ahead", { n: Ma
  * Checks everything asc-payout depends on and says how to fix what fails.
  * Exit code 1 when something fails (warnings don't count).
  */
+/** Checks clock, keys, report access, network and cache, with a loading line while it works. */
 export async function runDoctor(version: string): Promise<number> {
+  return withSpinner(t("Checking your setup"), () => checks(version));
+}
+
+async function checks(version: string): Promise<number> {
   let failures = 0;
   const line = (level: Level, text: string, fix?: string) => {
     if (level === "fail") failures++;

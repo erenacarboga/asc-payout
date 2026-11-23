@@ -153,7 +153,6 @@ export async function adsWizard(settings: Settings): Promise<boolean> {
     async (d) => {
       const key: AdsKey =
         d.source === "keep" ? current! : { clientId: d.clientId!, teamId: d.teamId!, keyId: d.keyId!, keyFile: d.keyFile! };
-      say(t("Checking with Apple Ads…"));
       const ok = (await checkAds(key)) !== null;
       say();
       const action = await ui.pick<"save" | "fix" | "cancel">({

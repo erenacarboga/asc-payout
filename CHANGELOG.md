@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.2
+
+- Updating shows a live progress line: megabytes downloaded, speed and time left, then checking the download and installing, and ends with "asc-payout updated: 1.7.1 → 1.7.2". The download no longer stops after two minutes on a slow connection; it only gives up when no data arrives for 30 seconds.
+- A loading line everywhere asc-payout waits: checking an account while setting it up, looking for a new version, the update check at start (only when it isn't instant), Settings > Notifications > Check now, Check my setup, and exchange rates for monthly goals.
+- Lines printed while something is loading appear above the loading line instead of mixing with it.
+
 ## 1.7.1
 
 - Windows: updating no longer stops when an older copy of asc-payout is still open in another window (its file is locked). The running program is moved aside under a name of its own, and old copies are removed on a later start once they are closed.

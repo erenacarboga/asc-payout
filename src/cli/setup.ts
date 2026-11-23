@@ -8,7 +8,7 @@ import { LANGS, systemLang, t, type Lang } from "../i18n";
 import { money } from "../money/format";
 import { checkKeyFile, cleanPath, findKeyFiles, keyIdFromFileName, storeKeyFile } from "./keys";
 import { isDailyCheckOn, setDailyCheck } from "./schedule";
-import { startSpinner } from "./spinner";
+import { startSpinner, withSpinner } from "./spinner";
 import { compareVersions, latestVersion, runUpdate } from "./update";
 import { runWatch } from "./watch";
 import { adsMenu } from "./ads-setup";
@@ -181,7 +181,6 @@ async function accountWizard(others: Account[], current?: Account): Promise<Acco
         : (d.keyChoice as ApiKey);
       say();
       say(`${bold(d.name!)}  ${dim(t("vendor {vendor} · key {key}", { vendor: d.vendor!, key: d.key.keyId }))}`);
-      say(t("Checking with App Store Connect…"));
       const ok = await verify(toAccount(d, current));
       const action = await ui.pick<"save" | "fix" | "cancel">({
         message: ok ? t("Everything works. Save?") : t("Something is not right. What now?"),
@@ -248,10 +247,10 @@ function toAccount(d: AccountDraft, current?: Account): Account {
 }
 
 async function verify(account: Account): Promise<boolean> {
-  const sales = await checkSalesAccess(account);
+  const sales = await withSpinner(t("Checking access to Sales reports"), () => checkSalesAccess(account));
   say(`${sales.ok ? "✓" : "✗"} ${sales.message}`);
   if (sales.ok) {
-    const catalog = await loadCatalog(account, true, (m) => say(`! ${m}`));
+    const catalog = await withSpinner(t("Reading app names"), () => loadCatalog(account, true, (m) => say(`! ${m}`)));
     if (catalog.apps.length > 0) say(`✓ ${t("App names: {n} app(s)", { n: catalog.apps.length })}`);
   }
   say();
@@ -298,7 +297,6 @@ async function accountMenu(settings: Settings, target: Account): Promise<void> {
         target = updated;
       }
     } else if (action === "check") {
-      say(t("Checking with App Store Connect…"));
       await verify(target);
     } else if (action === "catalog") {
       say(dim(t("Only needed to name in-app purchases with no sales in the months you look at.")));
@@ -339,7 +337,7 @@ async function notificationsMenu(settings: Settings): Promise<void> {
     if (choice === BACK || choice === QUIT) return;
     if (choice === "now") {
       say();
-      await runWatch(settings.accounts, settings.currency);
+      await withSpinner(t("Looking for last month's Financial Report"), () => runWatch(settings.accounts, settings.currency));
       say();
     } else {
       const result = setDailyCheck(choice === "on");
@@ -412,8 +410,7 @@ async function goalsMenu(settings: Settings): Promise<void> {
 }
 
 async function checkUpdates(): Promise<void> {
-  say(t("Looking for a new version…"));
-  const latest = await latestVersion();
+  const latest = await withSpinner(t("Looking for the latest version"), () => latestVersion());
   if (!latest) {
     say(t("Could not check: no internet connection?"));
     return;

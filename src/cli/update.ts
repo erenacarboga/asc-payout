@@ -5,9 +5,11 @@ import { basename, dirname, join } from "node:path";
 import { readJson, writeFileAtomic } from "../config/files";
 import { cacheDir } from "../config/paths";
 import { t } from "../i18n";
+import { startSpinner, withSpinner, type Spinner } from "./spinner";
 import { ui } from "./ui";
 
 export const REPO = "erenacarboga/asc-payout";
+const green = (s: string) => (process.stdout.isTTY && !process.env.NO_COLOR ? `\x1b[32m${s}\x1b[39m` : s);
 /** A check younger than this is reused, so a run started again right away doesn't ask GitHub again. */
 const CHECK_EVERY_MS = 15 * 60 * 1000;
 
@@ -69,18 +71,50 @@ export async function latestVersion(timeoutMs = 10_000, allowGh = true): Promise
   return view.ok && view.out ? view.out : null;
 }
 
-async function download(tag: string, files: string[], dir: string): Promise<void> {
+/** Gives up when no data has arrived for this long (a slow connection is fine). */
+const STALL_MS = 30_000;
+
+/** Downloads one file, reporting bytes as they arrive. */
+async function fetchFile(url: string, path: string, onBytes?: (done: number, total: number) => void): Promise<void> {
+  const abort = new AbortController();
+  let stall = setTimeout(() => abort.abort(), STALL_MS);
+  const alive = () => {
+    clearTimeout(stall);
+    stall = setTimeout(() => abort.abort(), STALL_MS);
+  };
   try {
-    for (const f of files) {
-      const r = await fetch(`https://github.com/${REPO}/releases/download/${tag}/${f}`, { signal: AbortSignal.timeout(120_000) });
-      if (!r.ok) throw new Error(`${r.status}`);
-      writeFileSync(join(dir, f), Buffer.from(await r.arrayBuffer()));
+    const r = await fetch(url, { signal: abort.signal });
+    if (!r.ok || !r.body) throw new Error(`${r.status}`);
+    const total = Number(r.headers.get("content-length")) || 0;
+    const chunks: Uint8Array[] = [];
+    let done = 0;
+    const reader = r.body.getReader();
+    for (;;) {
+      const { value, done: finished } = await reader.read();
+      if (finished) break;
+      alive();
+      chunks.push(value);
+      done += value.length;
+      onBytes?.(done, total);
     }
+    if (total && done !== total) throw new Error("incomplete download");
+    writeFileSync(path, Buffer.concat(chunks));
+  } finally {
+    clearTimeout(stall);
+  }
+}
+
+async function download(tag: string, asset: string, dir: string, spinner: Spinner): Promise<void> {
+  const base = `https://github.com/${REPO}/releases/download/${tag}`;
+  try {
+    await fetchFile(`${base}/SHA256SUMS`, join(dir, "SHA256SUMS"));
+    await fetchFile(`${base}/${asset}`, join(dir, asset), (done, total) => spinner.progress(done, total, "bytes"));
     return;
   } catch {
     // blocked (a proxy, for example): try the GitHub CLI if it is installed
   }
-  const args = ["release", "download", tag, "-R", REPO, "-D", dir, "--clobber", ...files.flatMap((f) => ["-p", f])];
+  spinner.text(t("Downloading with the GitHub CLI"));
+  const args = ["release", "download", tag, "-R", REPO, "-D", dir, "--clobber", "-p", asset, "-p", "SHA256SUMS"];
   if (!gh(args).ok) throw new Error(t("Download failed. Check your internet connection and try again."));
 }
 
@@ -89,7 +123,7 @@ export async function runUpdate(current: string): Promise<number> {
     ui.print(`  ${t("Running from source: update with git pull.")}`);
     return 0;
   }
-  const latest = await latestVersion();
+  const latest = await withSpinner(t("Looking for the latest version"), () => latestVersion());
   if (!latest) throw new Error(t("Could not find the latest release. Check your internet connection and try again."));
   if (compareVersions(latest, current) <= 0) {
     ui.print(`  ${t("asc-payout {version} is up to date.", { version: current })}`);
@@ -98,15 +132,21 @@ export async function runUpdate(current: string): Promise<number> {
   const asset = assetName();
   if (!asset) throw new Error(t("No release build for {platform} {arch}.", { platform: process.platform, arch: process.arch }));
 
-  ui.print(`  ${t("Updating {from} -> {to}...", { from: current, to: latest.replace(/^v/, "") })}`);
+  const to = latest.replace(/^v/, "");
   const dir = mkdtempSync(join(tmpdir(), "asc-payout-update-"));
+  const spinner = startSpinner();
+  // without a terminal (scripts, logs) a plain line says what is going on
+  if (!process.stderr.isTTY) ui.print(`  ${t("Updating {from} -> {to}...", { from: current, to })}`);
   try {
-    await download(latest, [asset, "SHA256SUMS"], dir);
+    spinner.text(t("Downloading asc-payout {version}", { version: to }));
+    await download(latest, asset, dir, spinner);
+    spinner.text(t("Checking the download"));
     const sums = readFileSync(join(dir, "SHA256SUMS"), "utf-8");
     const want = sums.split("\n").map((l) => l.trim().split(/\s+\*?/)).find((p) => p[1] === asset)?.[0];
     const have = createHash("sha256").update(readFileSync(join(dir, asset))).digest("hex");
     if (!want || want.toLowerCase() !== have) throw new Error(t("Checksum does not match; nothing was changed."));
 
+    spinner.text(t("Installing"));
     const target = process.execPath;
     if (process.platform === "win32") {
       // A running .exe can be renamed but not overwritten. An older copy still running
@@ -124,9 +164,11 @@ export async function runUpdate(current: string): Promise<number> {
       chmodSync(`${target}.new`, 0o755);
       renameSync(`${target}.new`, target);
     }
-    ui.print(`  ${t("Updated to {version}.", { version: latest.replace(/^v/, "") })}`);
+    spinner.stop();
+    ui.print(`  ${green("✔")} ${t("asc-payout updated: {from} → {to}", { from: current, to })}`);
     return 0;
   } finally {
+    spinner.stop();
     rmSync(dir, { recursive: true, force: true });
   }
 }
@@ -212,7 +254,7 @@ export async function updateHint(current: string): Promise<string | null> {
  */
 export async function offerUpdate(current: string, argv: string[]): Promise<number | null> {
   if (!isCompiled() || !ui.interactive() || process.env.ASC_PAYOUT_NO_UPDATE_CHECK) return null;
-  const newer = await newerRelease(current).catch(() => null);
+  const newer = await withSpinner(t("Checking for updates"), () => newerRelease(current).catch(() => null), 300);
   if (!newer || newer.skipped) return null;
   ui.print("");
   ui.print(`  ${t("asc-payout {version} is out (you have {current}).", { version: newer.version, current })}`);
