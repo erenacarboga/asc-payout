@@ -1,6 +1,6 @@
 # Publishing
 
-Steps that need the repository to be public, or your own accounts. Nothing here runs automatically.
+Steps that need your own accounts. Nothing here runs automatically.
 
 ## Homebrew and Scoop
 
@@ -45,7 +45,7 @@ Builds downloaded with `curl` (the install script) are not quarantined and run a
    bun scripts/package-manifests.ts vX.Y.Z <folder with the files and SHA256SUMS>
    ```
 
-To automate it later, store the `.p12` (base64), its password, the Apple ID, team ID and app-specific password as repository secrets and run the commands above on a `macos-latest` runner (available once the repository is public, or with paid minutes).
+To automate it later, store the `.p12` (base64), its password, the Apple ID, team ID and app-specific password as repository secrets and run the commands above on a `macos-latest` runner.
 
 ## Demo GIF
 

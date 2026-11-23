@@ -1,5 +1,7 @@
 # asc-payout
 
+[![Release](https://img.shields.io/github/v/release/erenacarboga/asc-payout)](https://github.com/erenacarboga/asc-payout/releases/latest) [![CI](https://github.com/erenacarboga/asc-payout/actions/workflows/ci.yml/badge.svg)](https://github.com/erenacarboga/asc-payout/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 [Türkçe](README.tr.md)
 
 **What will Apple pay me for this month?** `asc-payout` answers from your own App Store Connect data, per Apple fiscal month, with two sources side by side:
@@ -58,19 +60,6 @@ irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/install.ps1 |
 
 Builds for Windows (x64, ARM64), macOS (Apple silicon, Intel) and Linux (x64, arm64, and musl for Alpine). The installer checks the SHA-256 of the download and puts `asc-payout` on your PATH: on Windows in your user PATH, on macOS and Linux by adding one line to your shell's startup file (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` or fish config; skip with `ASC_PAYOUT_NO_MODIFY_PATH=1`). Open a new terminal afterwards and type `asc-payout`. Run the installer again to update.
 
-<details>
-<summary>While the repository is private</summary>
-
-Sign in once with the [GitHub CLI](https://cli.github.com) (`gh auth login`), then:
-
-```bash
-gh api repos/erenacarboga/asc-payout/contents/install.sh -H "Accept: application/vnd.github.raw" | bash
-```
-
-```powershell
-gh api repos/erenacarboga/asc-payout/contents/install.ps1 -H "Accept: application/vnd.github.raw" | Out-String | iex
-```
-</details>
 
 ## Set up
 

@@ -77,10 +77,10 @@ async function download(tag: string, files: string[], dir: string): Promise<void
     }
     return;
   } catch {
-    // private repository or blocked: try the GitHub CLI
+    // blocked (a proxy, for example): try the GitHub CLI if it is installed
   }
   const args = ["release", "download", tag, "-R", REPO, "-D", dir, "--clobber", ...files.flatMap((f) => ["-p", f])];
-  if (!gh(args).ok) throw new Error(t("Download failed. For a private repository, install the GitHub CLI and run: gh auth login"));
+  if (!gh(args).ok) throw new Error(t("Download failed. Check your internet connection and try again."));
 }
 
 export async function runUpdate(current: string): Promise<number> {
@@ -89,7 +89,7 @@ export async function runUpdate(current: string): Promise<number> {
     return 0;
   }
   const latest = await latestVersion();
-  if (!latest) throw new Error(t("Could not find the latest release (offline, or a private repository without the GitHub CLI)."));
+  if (!latest) throw new Error(t("Could not find the latest release. Check your internet connection and try again."));
   if (compareVersions(latest, current) <= 0) {
     ui.print(`  ${t("asc-payout {version} is up to date.", { version: current })}`);
     return 0;

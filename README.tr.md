@@ -1,5 +1,7 @@
 # asc-payout
 
+[![Release](https://img.shields.io/github/v/release/erenacarboga/asc-payout)](https://github.com/erenacarboga/asc-payout/releases/latest) [![CI](https://github.com/erenacarboga/asc-payout/actions/workflows/ci.yml/badge.svg)](https://github.com/erenacarboga/asc-payout/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 [English](README.md)
 
 **Apple bu ay bana ne kadar ödeyecek?** `asc-payout` bunu kendi App Store Connect verinizden, Apple'ın mali aylarına göre hesaplar ve iki kaynağı yan yana gösterir:
@@ -10,6 +12,8 @@
 Bir veya birden fazla geliştirici hesabı desteklenir. Her para birimi ay sonu kuruyla çevrilir. Ayrıca: uygulama ayrıntıları, iadeler ve iptaller, Apple Ads sonrası kâr, aylık hedefler. Menüler ve ekranlar Türkçe.
 
 Hesap olmadan denemek için: `asc-payout demo` (uydurma rakamlar).
+
+![asc-payout demo](docs/demo.gif)
 
 ## Kurulum
 
@@ -23,16 +27,6 @@ Windows (PowerShell):
 
 ```powershell
 irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/install.ps1 | iex
-```
-
-Repo gizliyken önce bir kez `gh auth login`, sonra:
-
-```powershell
-gh api repos/erenacarboga/asc-payout/contents/install.ps1 -H "Accept: application/vnd.github.raw" | Out-String | iex
-```
-
-```bash
-gh api repos/erenacarboga/asc-payout/contents/install.sh -H "Accept: application/vnd.github.raw" | bash
 ```
 
 Kurulum `asc-payout` komutunu PATH'e ekler: Windows'ta kullanıcı PATH'ine, macOS ve Linux'ta kabuğun ayar dosyasına (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` veya fish) bir satır yazarak (`ASC_PAYOUT_NO_MODIFY_PATH=1` ile kapatılabilir). Sonra yeni bir terminal açıp `asc-payout` yazmanız yeterli. Güncellemek için aynı komut tekrar çalıştırılır.

@@ -112,15 +112,15 @@ export const TR_MAIN: Record<string, string> = {
   // Update
   "asc-payout {version} is available: run  asc-payout update": "asc-payout {version} çıktı: güncellemek için  asc-payout update",
   "Running from source: update with git pull.": "Kaynak koddan çalışıyor: git pull ile güncelleyin.",
-  "Could not find the latest release (offline, or a private repository without the GitHub CLI).":
-    "En son sürüm bulunamadı (çevrimdışı ya da GitHub CLI olmadan özel bir depo).",
+  "Could not find the latest release. Check your internet connection and try again.":
+    "En son sürüm bulunamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.",
   "asc-payout {version} is up to date.": "asc-payout {version} güncel.",
   "No release build for {platform} {arch}.": "{platform} {arch} için sürüm derlemesi yok.",
   "Updating {from} -> {to}...": "Güncelleniyor: {from} -> {to}...",
   "Checksum does not match; nothing was changed.": "Sağlama toplamı uyuşmuyor; hiçbir şey değiştirilmedi.",
   "Updated to {version}.": "Güncellendi: {version}.",
-  "Download failed. For a private repository, install the GitHub CLI and run: gh auth login":
-    "İndirme başarısız. Özel bir depo için GitHub CLI'ı kurun ve şunu çalıştırın: gh auth login",
+  "Download failed. Check your internet connection and try again.":
+    "İndirme başarısız. İnternet bağlantınızı kontrol edip tekrar deneyin.",
 
   // Command line
   "setup needs an interactive terminal": "setup için etkileşimli bir terminal gerekir",

@@ -5,7 +5,7 @@
 # Installs the latest release after checking its SHA-256 and adds it to your PATH.
 #   $env:ASC_PAYOUT_VERSION = "v1.0.0"   install that version instead of the latest
 #   $env:ASC_PAYOUT_BIN_DIR = "C:\tools" install somewhere else
-# Without direct access to the release (a private repository), the GitHub CLI is used.
+# If the direct download fails (a proxy, for example) and the GitHub CLI is installed, it is used instead.
 
 # Everything runs in its own scope so nothing leaks into your PowerShell session.
 & {
@@ -33,7 +33,7 @@
         }
         catch {
             if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-                throw "Download failed. For a private repository, install the GitHub CLI and run: gh auth login"
+                throw "Download failed. Check your internet connection and try again."
             }
             Write-Host "Direct download not possible; using the GitHub CLI"
             $tag = @(); if ($version) { $tag = @($version) }

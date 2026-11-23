@@ -112,7 +112,7 @@ export const TR_SETUP: Record<string, string> = {
 
   // Updates and app names
   "Looking for a new version…": "Yeni sürüm aranıyor…",
-  "Could not check (offline, or a private repository without the GitHub CLI).": "Denetlenemedi (çevrimdışı ya da GitHub CLI olmadan özel bir depo).",
+  "Could not check: no internet connection?": "Denetlenemedi: internet bağlantısı yok mu?",
   "asc-payout {version} is the latest version.": "asc-payout {version} en son sürüm.",
   "Version {latest} is available (you have {version}). Update now?": "Yeni sürüm: {latest} (sizdeki: {version}). Şimdi güncellensin mi?",
   "Start asc-payout again to use the new version.": "Yeni sürümü kullanmak için asc-payout'u yeniden başlatın.",

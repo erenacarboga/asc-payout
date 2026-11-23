@@ -415,7 +415,7 @@ async function checkUpdates(): Promise<void> {
   say(t("Looking for a new version…"));
   const latest = await latestVersion();
   if (!latest) {
-    say(t("Could not check (offline, or a private repository without the GitHub CLI)."));
+    say(t("Could not check: no internet connection?"));
     return;
   }
   if (compareVersions(latest, pkg.version) <= 0) {

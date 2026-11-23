@@ -6,7 +6,7 @@
 # Installs the latest release into ~/.local/bin after checking its SHA-256.
 #   ASC_PAYOUT_VERSION=v1.0.0   install that version instead of the latest
 #   ASC_PAYOUT_BIN_DIR=/opt/bin install somewhere else
-# Without direct access to the release (a private repository), the GitHub CLI is used.
+# If the direct download fails (a proxy, for example) and the GitHub CLI is installed, it is used instead.
 set -euo pipefail
 
 repo="erenacarboga/asc-payout"
@@ -37,7 +37,7 @@ get() {
 
 echo "Downloading $asset ${version:-(latest)}"
 if ! { get "$url/$asset" "$work/$asset" && get "$url/SHA256SUMS" "$work/SHA256SUMS"; } 2>/dev/null; then
-  command -v gh >/dev/null || { echo "Download failed. For a private repository, install the GitHub CLI and run: gh auth login" >&2; exit 1; }
+  command -v gh >/dev/null || { echo "Download failed. Check your internet connection and try again." >&2; exit 1; }
   echo "Direct download not possible; using the GitHub CLI"
   gh release download ${version:+"$version"} -R "$repo" -p "$asset" -p SHA256SUMS -D "$work" --clobber
 fi
