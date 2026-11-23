@@ -70,6 +70,10 @@ Menüden seçilen ay ekranda kalır: **← →** önceki/sonraki ay, **↑ ↓**
 
 Bir sorun olursa `asc-payout doctor` saati, anahtarları, her rapora erişimi, ağı ve önbelleği tek tek kontrol eder ve düzeltme yolunu yazar. `asc-payout update` en son sürümü kurar.
 
+`asc-payout subs` aktif aboneleri (ödeyen, denemede, ödeme sorunlu), uygulama bazında MRR'ı ve son 30 günün denemelerini, ödemeye geçişlerini, yenilemelerini, iptallerini gösterir. `asc-payout history --year 2026 --csv` bir yılı tabloya aktarılacak şekilde verir. `asc-payout watch` geçen ayın Financial Report'u yayınlanınca bir kez masaüstü bildirimi gönderir; her sabah çalıştırmak için Windows'ta Görev Zamanlayıcı, macOS/Linux'ta cron kullanılabilir.
+
+Bir şey yüklenirken ekranda hangi adımda olduğunu, günlük raporlar için ilerlemeyi ve geçen süreyi gösteren canlı bir satır görünür; iş bitince silinir.
+
 ## Hesaplama
 
 - **Mali ay**: Apple'ın mali yılı Eylül'ün son cumartesi biter; çeyrekler 5, 4 ve 4 haftadır, 53 haftalık yıllarda fazla hafta Aralık'a eklenir. Financial Report varsa tarihler rapordan alınır.

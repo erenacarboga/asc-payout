@@ -3,19 +3,22 @@ import { fiscalPeriod, monthLabel, next, parseYearMonth, periodLabel, previous, 
 import { accountFromEnv, findAccount, loadSettings, saveSettings, type Account, type Settings } from "../config/settings";
 import type { MonthResult } from "../earnings/model";
 import { computeHistory, renderHistory } from "../earnings/history";
+import { computeSubscriptions, renderSubscriptions } from "../earnings/subscriptions";
 import { computeMonth } from "../earnings/month";
 import { renderMonth, renderSummary, type AccountRow } from "../earnings/render";
 import { HELP, parseArgs, UsageError, type Args } from "./args";
 import { demoResults } from "./demo";
 import { runDoctor } from "./doctor";
 import { runSetup, showStatus } from "./setup";
+import { historyCsv, monthCsv, subscriptionsCsv } from "./csv";
+import { startSpinner } from "./spinner";
+import { runWatch } from "./watch";
 import { ui } from "./ui";
 import { cleanUpAfterUpdate, runUpdate, updateHint } from "./update";
 
 export const VERSION: string = pkg.version;
 
 const dim = (s: string) => (process.stderr.isTTY && !process.env.NO_COLOR ? `\x1b[2m${s}\x1b[22m` : s);
-const log = (message: string) => ui.note(dim(`  ${message}`));
 
 export async function pickAccounts(args: Args, settings: Settings): Promise<Account[]> {
   const fromEnv = accountFromEnv();
@@ -79,6 +82,10 @@ export async function pickMonth(args: Args): Promise<YearMonth> {
 }
 
 function printResults(rows: AccountRow[], currency: string, args: Args): void {
+  if (args.csv) {
+    ui.print(monthCsv(rows.filter((r) => r.result).map((r) => r.result as MonthResult)).trimEnd());
+    return;
+  }
   if (args.json) {
     const results = rows.filter((r) => r.result).map((r) => r.result as MonthResult);
     const errors = rows.filter((r) => r.error).map((r) => ({ account: r.name, error: r.error }));
@@ -93,16 +100,29 @@ const currencyFor = (args: Args, settings: Settings) => args.currency ?? process
 
 async function showMonth(accounts: Account[], ym: YearMonth, currency: string, args: Args): Promise<AccountRow[]> {
   const rows: AccountRow[] = [];
-  for (const account of accounts) {
-    if (accounts.length > 1) log(`── ${account.name} ──`);
-    try {
-      const result = await computeMonth(account, ym, { currency, useCache: !args.noCache, refreshCatalog: args.refresh, log });
-      rows.push({ name: account.name, result });
-    } catch (error) {
-      rows.push({ name: account.name, error: (error as Error).message });
-      ui.note(`\n  ${account.name}: ${(error as Error).message}\n`);
+  const warnings: string[] = [];
+  const spinner = startSpinner();
+  try {
+    for (const account of accounts) {
+      try {
+        const result = await computeMonth(account, ym, {
+          currency,
+          useCache: !args.noCache,
+          refreshCatalog: args.refresh,
+          log: spinner.text,
+          progress: spinner.progress,
+          warn: (w) => warnings.push(`${account.name}: ${w}`),
+        });
+        rows.push({ name: account.name, result });
+      } catch (error) {
+        rows.push({ name: account.name, error: (error as Error).message });
+      }
     }
+  } finally {
+    spinner.stop();
   }
+  for (const w of warnings) ui.note(dim(`  ${w}`));
+  for (const r of rows) if (r.error) ui.note(`\n  ${r.name}: ${r.error}\n`);
   printResults(rows, currency, args);
   return rows;
 }
@@ -146,13 +166,13 @@ export async function report(args: Args): Promise<number> {
   if (accounts.length === 0) return 0;
   const ym = await pickMonth(args);
   const currency = currencyFor(args, settings);
-  const hint = !args.json && ui.interactive() ? updateHint(VERSION).catch(() => null) : Promise.resolve(null);
+  const hint = !args.json && !args.csv && ui.interactive() ? updateHint(VERSION).catch(() => null) : Promise.resolve(null);
 
   let rows = await showMonth(accounts, ym, currency, args);
 
   // Chosen from the menus: stay on screen, arrows move between months and accounts
   const fromEnv = accountFromEnv() !== null;
-  if (ui.interactive() && args.month === undefined && !args.json) {
+  if (ui.interactive() && args.month === undefined && !args.json && !args.csv) {
     const options: Account[][] = fromEnv ? [accounts] : settings.accounts.map((a) => [a]);
     if (!fromEnv && settings.accounts.length > 1) options.push(settings.accounts);
     let state: NavState = {
@@ -182,14 +202,69 @@ async function history(args: Args): Promise<number> {
   const accounts = await pickAccounts(args, settings);
   if (accounts.length === 0) return 0;
   const currency = currencyFor(args, settings);
+  const now = recentMonths(1)[0];
+  const months = args.year
+    ? Array.from({ length: 12 }, (_, i) => ({ year: args.year!, month: 12 - i })).filter(
+        (m) => m.year < now.year || (m.year === now.year && m.month <= now.month),
+      )
+    : recentMonths(args.months ?? 12);
+  if (months.length === 0) throw new UsageError(`${args.year} has not started yet`);
   const histories = [];
-  for (const account of accounts) {
-    log(`── ${account.name} ──`);
-    histories.push(await computeHistory(account, args.months ?? 12, { currency, useCache: !args.noCache, refreshCatalog: args.refresh, log }));
+  const spinner = startSpinner();
+  try {
+    for (const account of accounts) {
+      histories.push(
+        await computeHistory(account, months, {
+          currency,
+          useCache: !args.noCache,
+          refreshCatalog: args.refresh,
+          log: spinner.text,
+          progress: spinner.progress,
+          warn: () => {},
+        }),
+      );
+    }
+  } finally {
+    spinner.stop();
   }
-  if (args.json) ui.print(JSON.stringify({ version: VERSION, history: histories }, null, 2));
-  else ui.print(renderHistory(histories, currency));
+  if (args.csv) ui.print(historyCsv(histories).trimEnd());
+  else if (args.json) ui.print(JSON.stringify({ version: VERSION, history: histories }, null, 2));
+  else ui.print(renderHistory(histories, currency, args.year ? `${args.year}` : undefined));
   return histories.some((h) => h.errors.length > 0) ? 1 : 0;
+}
+
+async function subscriptions(args: Args): Promise<number> {
+  const settings = loadSettings();
+  const accounts = await pickAccounts(args, settings);
+  if (accounts.length === 0) return 0;
+  const currency = currencyFor(args, settings);
+  const results = [];
+  const errors: string[] = [];
+  const spinner = startSpinner();
+  try {
+    for (const account of accounts) {
+      try {
+        results.push(await computeSubscriptions(account, { currency, useCache: !args.noCache, days: args.days ?? 30, log: spinner.text, progress: spinner.progress }));
+      } catch (error) {
+        errors.push(`${account.name}: ${(error as Error).message}`);
+      }
+    }
+  } finally {
+    spinner.stop();
+  }
+  for (const e of errors) ui.note(`\n  ${e}\n`);
+  if (args.csv) ui.print(subscriptionsCsv(results).trimEnd());
+  else if (args.json) ui.print(JSON.stringify({ version: VERSION, subscriptions: results, errors }, null, 2));
+  else for (const r of results) ui.print(renderSubscriptions(r));
+  return errors.length ? 1 : 0;
+}
+
+async function watch(args: Args): Promise<number> {
+  const settings = loadSettings();
+  const fromEnv = accountFromEnv();
+  const accounts = fromEnv ? [fromEnv] : args.account ? await pickAccounts(args, settings) : settings.accounts;
+  if (accounts.length === 0) throw new UsageError("No account set up yet. Run: asc-payout setup");
+  return runWatch(accounts, currencyFor(args, settings));
 }
 
 function demo(args: Args): number {
@@ -206,7 +281,7 @@ function demo(args: Args): number {
  * Not for --json, piped output, help or version, and not with --no-clear or ASC_PAYOUT_NO_CLEAR=1.
  */
 function clearScreen(args: Args): void {
-  const screens = ["report", "history", "setup", "status", "demo", "doctor"];
+  const screens = ["report", "history", "subs", "setup", "status", "demo", "doctor"];
   if (!screens.includes(args.command) || args.json || args.noClear || process.env.ASC_PAYOUT_NO_CLEAR || !process.stdout.isTTY) return;
   // clear the screen and the scrollback, cursor to the top
   process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
@@ -240,5 +315,9 @@ export async function run(argv: string[]): Promise<number> {
       return report(args);
     case "history":
       return history(args);
+    case "subs":
+      return subscriptions(args);
+    case "watch":
+      return watch(args);
   }
 }

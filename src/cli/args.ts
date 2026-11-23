@@ -1,4 +1,4 @@
-export type Command = "report" | "history" | "setup" | "status" | "demo" | "doctor" | "update" | "help" | "version";
+export type Command = "report" | "history" | "subs" | "watch" | "setup" | "status" | "demo" | "doctor" | "update" | "help" | "version";
 
 export interface Args {
   command: Command;
@@ -7,6 +7,11 @@ export interface Args {
   currency?: string;
   /** history: how many months */
   months?: number;
+  /** history: the twelve months of this calendar year */
+  year?: number;
+  /** subs: days of events to count */
+  days?: number;
+  csv: boolean;
   /** group the month view by app (default) or country */
   by?: "app" | "country";
   json: boolean;
@@ -23,13 +28,17 @@ const COMMANDS: Record<string, Command> = {
   status: "status",
   demo: "demo",
   history: "history",
+  subs: "subs",
+  watch: "watch",
   doctor: "doctor",
   update: "update",
   help: "help",
   version: "version",
 };
 
-const VALUE_FLAGS: Record<string, "account" | "month" | "currency" | "months" | "by"> = {
+const VALUE_FLAGS: Record<string, "account" | "month" | "currency" | "months" | "by" | "year" | "days"> = {
+  "--year": "year",
+  "--days": "days",
   "--months": "months",
   "--by": "by",
   "--account": "account",
@@ -42,6 +51,7 @@ const VALUE_FLAGS: Record<string, "account" | "month" | "currency" | "months" | 
 
 const SWITCHES: Record<string, (a: Args) => void> = {
   "--json": (a) => (a.json = true),
+  "--csv": (a) => (a.csv = true),
   "--no-cache": (a) => (a.noCache = true),
   "--no-clear": (a) => (a.noClear = true),
   "--refresh": (a) => (a.refresh = true),
@@ -56,7 +66,7 @@ const SWITCHES: Record<string, (a: Args) => void> = {
 };
 
 export function parseArgs(argv: string[]): Args {
-  const args: Args = { command: "report", json: false, noCache: false, noClear: false, refresh: false };
+  const args: Args = { command: "report", json: false, csv: false, noCache: false, noClear: false, refresh: false };
   let commandSet = false;
 
   for (let i = 0; i < argv.length; i++) {
@@ -67,7 +77,15 @@ export function parseArgs(argv: string[]): Args {
       const value = inline ?? argv[++i];
       if (value === undefined || (inline === undefined && value.startsWith("-"))) throw new UsageError(`${flag} needs a value`);
       const key = VALUE_FLAGS[flag];
-      if (key === "months") {
+      if (key === "year") {
+        const n = Number(value);
+        if (!Number.isInteger(n) || n < 2008 || n > 2100) throw new UsageError("--year expects a year like 2026");
+        args.year = n;
+      } else if (key === "days") {
+        const n = Number(value);
+        if (!Number.isInteger(n) || n < 1 || n > 365) throw new UsageError("--days expects a number from 1 to 365");
+        args.days = n;
+      } else if (key === "months") {
         const n = Number(value);
         if (!Number.isInteger(n) || n < 1 || n > 36) throw new UsageError("--months expects a number from 1 to 36");
         args.months = n;
@@ -91,6 +109,7 @@ export function parseArgs(argv: string[]): Args {
     }
   }
 
+  if (args.json && args.csv) throw new UsageError("choose --json or --csv, not both");
   if (args.currency !== undefined) {
     args.currency = args.currency.toUpperCase();
     if (!/^[A-Z]{3}$/.test(args.currency)) throw new UsageError(`--currency expects a 3-letter code like USD, EUR or TRY`);
@@ -105,6 +124,9 @@ Usage
   asc-payout                       pick an account and a month
   asc-payout -a <account> -m <YYYY-MM>
   asc-payout history               the last 12 months, with the biggest apps
+  asc-payout history --year 2026    January to December of a year
+  asc-payout subs                  subscribers, trials and MRR, and the last 30 days
+  asc-payout watch                 tell me when last month's report is published
   asc-payout setup                 add, edit or remove accounts
   asc-payout status                show accounts and where files are kept
   asc-payout demo                  try it with made-up data
@@ -117,7 +139,10 @@ Options
   -c, --currency <CODE>  show amounts in this currency for this run (USD, EUR, TRY, ...)
       --by country       one row per country instead of per app
       --months <N>       history: number of months (default 12)
+      --year <YYYY>      history: the months of that year
+      --days <N>         subs: days of events (default 30)
       --json             print the result as JSON (progress goes to stderr)
+      --csv              print the result as CSV, for spreadsheets
       --no-cache         download the reports again
       --no-clear         don't clear the screen first (or ASC_PAYOUT_NO_CLEAR=1)
       --refresh          reload app names from App Store Connect
@@ -130,6 +155,8 @@ Environment
   ASC_PAYOUT_CURRENCY    default display currency
   ASC_PAYOUT_CONFIG_DIR, ASC_PAYOUT_CACHE_DIR
                          where settings and downloaded reports are kept
+  ASC_PAYOUT_NOTIFY=off   watch: print only, no desktop notification
+  ASC_PAYOUT_NO_SPINNER=1 no loading animation
   ASC_PAYOUT_NO_UPDATE_CHECK=1
                          never look for new releases
   NO_COLOR=1             no colors     DEBUG=1  more detail

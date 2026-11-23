@@ -1,4 +1,4 @@
-import { monthLabel, recentMonths, type YearMonth } from "../calendar/fiscal";
+import { fiscalPeriod, monthLabel, today, type YearMonth } from "../calendar/fiscal";
 import type { Account } from "../config/settings";
 import { money } from "../money/format";
 import type { MonthResult } from "./model";
@@ -16,15 +16,15 @@ export interface AccountHistory {
 }
 
 /**
- * The last `count` months: the running month with its forecast, closed months from
+ * Several months, newest first: a running month with its forecast, closed months from
  * their Financial Report (Trends only where no report exists yet).
  */
-export async function computeHistory(account: Account, count: number, opts: MonthOptions): Promise<AccountHistory> {
-  const months = recentMonths(count);
+export async function computeHistory(account: Account, months: YearMonth[], opts: MonthOptions): Promise<AccountHistory> {
   const out: AccountHistory = { name: account.name, months: [], errors: [] };
-  for (const [i, ym] of months.entries()) {
+  for (const ym of months) {
+    const running = fiscalPeriod(ym).end >= today();
     try {
-      out.months.push(await computeMonth(account, ym, { ...opts, trends: i === 0 ? "always" : "when-needed", settlement: false }));
+      out.months.push(await computeMonth(account, ym, { ...opts, trends: running ? "always" : "when-needed", settlement: false }));
     } catch (error) {
       out.months.push(null);
       out.errors.push(`${monthLabel(ym)}: ${(error as Error).message.split("\n")[0]}`);
@@ -42,7 +42,7 @@ function bar(value: number, max: number, width: number): string {
   return "█".repeat(Math.floor(eighths / 8)) + (eighths % 8 ? "▏▎▍▌▋▊▉"[(eighths % 8) - 1] : "");
 }
 
-export function renderHistory(histories: AccountHistory[], currency: string): string {
+export function renderHistory(histories: AccountHistory[], currency: string, title?: string): string {
   const m = (n: number) => money(n, currency);
   const months = histories[0]?.months.length ?? 0;
   const ymOf = (i: number): YearMonth | undefined => histories.find((h) => h.months[i])?.months[i]?.month;
@@ -56,7 +56,7 @@ export function renderHistory(histories: AccountHistory[], currency: string): st
   const barWidth = Math.max(8, 74 - NAME - COL * (several ? histories.length + 1 : 1) - 9);
 
   out.push("");
-  out.push(bold(`  History  ·  ${several ? "all accounts" : histories[0].name}  ·  last ${months} months`) + dim("  (payments by Apple fiscal month)"));
+  out.push(bold(`  History  ·  ${several ? "all accounts" : histories[0].name}  ·  ${title ?? `last ${months} months`}`) + dim("  (payments by Apple fiscal month)"));
   out.push("");
   const heads = several ? [...histories.map((h) => h.name.slice(0, COL - 2)), "Total"] : ["Payment"];
   out.push(dim(`  ${"Month".padEnd(NAME)}${heads.map((h) => h.padStart(COL)).join("")}${"vs prev".padStart(9)}`));
@@ -79,7 +79,7 @@ export function renderHistory(histories: AccountHistory[], currency: string): st
     );
   }
 
-  const closed = totals.slice(1);
+  const closed = totals.filter((_, i) => !histories.some((h) => h.months[i]?.reports.status === "in-progress"));
   const sum = totals.reduce((a, b) => a + b, 0);
   const avg = closed.length ? closed.reduce((a, b) => a + b, 0) / closed.length : 0;
   out.push("  " + "─".repeat(NAME + COL * heads.length + 9 + barWidth + 1));

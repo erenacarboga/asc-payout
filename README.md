@@ -94,6 +94,9 @@ asc-payout -m 2026-11 -c EUR        a running month, shown in euros
 asc-payout -a all --json            machine-readable output
 asc-payout history -a all           the last 12 months side by side, with your biggest apps
 asc-payout -m 2026-10 --by country  where the money came from
+asc-payout history --year 2026 --csv  a year, ready for a spreadsheet
+asc-payout subs                     paying subscribers, trials, MRR and the last 30 days
+asc-payout watch                    announce last month's final numbers once Apple publishes them
 ```
 
 Picked from the menus, the month stays on screen: **← →** go to the previous or next month, **↑ ↓** switch account (or all accounts), **c** switches between apps and countries, **q** quits.
@@ -108,6 +111,10 @@ Picked from the menus, the month stays on screen: **← →** go to the previous
 | `--refresh` | reload app names |
 | `--by country` | one row per country instead of per app |
 | `history [--months N]` | payments of the last N months (default 12), month-on-month change, top apps |
+| `history --year YYYY` | January to December of a year |
+| `subs [--days N]` | active subscriptions per app (paying, trials, billing issues, MRR) and the last N days' trials, conversions, renewals, cancellations, refunds |
+| `watch` | when last month's Financial Report is out: a desktop notification and a line of output, once |
+| `--csv` | CSV instead of the table (month, history, subs) |
 | `--no-clear` | keep the screen; by default it is cleared first (also `ASC_PAYOUT_NO_CLEAR=1`) |
 | `setup`, `status`, `demo` | manage accounts, show where files are, try with made-up data |
 | `doctor` | check clock, keys, access to each report, network and cache, with the fix for anything wrong |
@@ -128,6 +135,19 @@ For scripts and CI, an account can come from environment variables instead of se
 - **Nothing half-done is used.** Downloads are written to the cache in one step, and every stored report is checked before it is read again (its own row count or totals). A damaged file is thrown away and downloaded again.
 - **Same numbers every time.** The exchange rates of a past day are stored, so a closed month always shows the same totals, even offline.
 - **Payment** is expected about 33 days after the month ends. Amounts are before tax withholding and bank fees, and Apple's own exchange rates differ slightly from the ones used here.
+
+## Get told when the month is final
+
+`asc-payout watch` checks whether Apple has published last month's Financial Report and announces it once (a desktop notification and a line of output). Run it every morning:
+
+- **Windows:** `schtasks /create /sc daily /st 10:00 /tn asc-payout-watch /tr "%LOCALAPPDATA%\Programs\asc-payout\asc-payout.exe watch"`
+- **macOS / Linux:** add `0 10 * * * ~/.local/bin/asc-payout watch` with `crontab -e`
+
+`ASC_PAYOUT_NOTIFY=off` prints without a notification.
+
+## Subscriptions
+
+`asc-payout subs` reads Apple's subscription reports: on the latest published day, how many subscriptions pay (standard price or a paid offer), how many are in a free trial and how many have a billing problem, per app, with the monthly recurring proceeds (MRR: weekly × 4.35, yearly ÷ 12, at each subscription's current price, before tax). Below it, the last 30 days of events: new trials, trial-to-paid conversions, new paid subscriptions, renewals, cancellations and refunds. Apple sometimes answers "no sales" for a snapshot that is only late; asc-payout then uses the day before instead of showing zero.
 
 ## Privacy
 

@@ -184,10 +184,18 @@ async function downloadDay(account: Account, date: string, kind: DailyKind): Pro
  * One daily report per date, a few in parallel. Published days are final and cached;
  * days not published yet and failures are fetched again next time.
  */
-export async function downloadDays(account: Account, dates: string[], useCache: boolean, kind: DailyKind = "SALES"): Promise<SalesDay[]> {
+export async function downloadDays(
+  account: Account,
+  dates: string[],
+  useCache: boolean,
+  kind: DailyKind = "SALES",
+  onProgress?: (done: number, total: number) => void,
+): Promise<SalesDay[]> {
   const dir = join(vendorCacheDir(account.vendor), DAILY[kind].folder);
   const result: SalesDay[] = new Array(dates.length);
   let cursor = 0;
+  let finished = 0;
+  const tick = () => onProgress?.(++finished, dates.length);
 
   async function worker(): Promise<void> {
     while (cursor < dates.length) {
@@ -198,12 +206,19 @@ export async function downloadDays(account: Account, dates: string[], useCache: 
         const text = readCached(file, (t) => t === NO_SALES || isCompleteDaily(kind, t));
         if (text !== null) {
           result[i] = text === NO_SALES ? { date, status: "no-sales" } : { date, status: "sales", text };
+          tick();
           continue;
         }
       }
       const day = await downloadDay(account, date, kind);
-      if (day.status === "sales" || day.status === "no-sales") writeFileAtomic(file, day.status === "sales" ? day.text! : NO_SALES);
+      // "No sales" is remembered only once it can be trusted: Apple sometimes says it for a
+      // day whose report is just late (seen for subscription snapshots), so recent days and
+      // subscription snapshots are asked again next time.
+      const recent = date > new Date(Date.now() - 3 * 86_400_000).toISOString().slice(0, 10);
+      if (day.status === "sales") writeFileAtomic(file, day.text!);
+      else if (day.status === "no-sales" && !recent && kind !== "SUBSCRIPTION") writeFileAtomic(file, NO_SALES);
       result[i] = day;
+      tick();
     }
   }
 
@@ -212,7 +227,8 @@ export async function downloadDays(account: Account, dates: string[], useCache: 
 }
 
 /** Kept for callers that only read Sales reports. */
-export const downloadSalesDays = (account: Account, dates: string[], useCache: boolean) => downloadDays(account, dates, useCache, "SALES");
+export const downloadSalesDays = (account: Account, dates: string[], useCache: boolean, onProgress?: (done: number, total: number) => void) =>
+  downloadDays(account, dates, useCache, "SALES", onProgress);
 
 /** Used by setup and doctor: proves the key and vendor number are accepted for Sales reports. */
 export async function checkSalesAccess(account: Account): Promise<{ ok: boolean; message: string }> {

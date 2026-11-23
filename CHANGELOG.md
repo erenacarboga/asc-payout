@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.0
+
+- `asc-payout subs`: active subscriptions per app (paying, free trials, billing retry and grace period), MRR, and the last 30 days of trials, trial-to-paid conversions, new paid subscriptions, renewals, cancellations and refunds (`--days N`).
+- `--csv` for the month view, history and subscriptions.
+- `asc-payout history --year 2026`: the months of a calendar year.
+- `asc-payout watch`: announces last month's final numbers once Apple publishes them, with a desktop notification (Windows, macOS, Linux). Made for a daily scheduled run.
+- A live loading line while reports download: the current step, a progress bar for daily reports and the time so far. It disappears when the results are shown, and is off when output is not a terminal (`ASC_PAYOUT_NO_SPINNER=1`).
+- Apple sometimes answers "no sales" for a report that is only late. Such answers are no longer stored for the last three days or for subscription snapshots, and a late snapshot falls back to the day before.
+
 ## 1.3.0
 
 - The difference between Reports and Trends is explained to the cent from the Financial Detail Report: sales made before the month that Apple settled in this report, and this month's sales that settle in the next one.
