@@ -30,7 +30,3 @@ Type "asc-payout demo -m $(date +%Y-%m)"
 Sleep 400ms
 Enter
 Sleep 5s
-Type "ASC_PAYOUT_LANG=tr asc-payout demo -m $(date +%Y-%m)"
-Sleep 400ms
-Enter
-Sleep 5s
