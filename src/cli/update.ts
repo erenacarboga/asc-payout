@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { chmodSync, copyFileSync, existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { readJson, writeFileAtomic } from "../config/files";
 import { cacheDir } from "../config/paths";
 import { t } from "../i18n";
@@ -109,13 +109,14 @@ export async function runUpdate(current: string): Promise<number> {
 
     const target = process.execPath;
     if (process.platform === "win32") {
-      // A running .exe can be renamed but not overwritten
-      rmSync(`${target}.old`, { force: true });
-      renameSync(target, `${target}.old`);
+      // A running .exe can be renamed but not overwritten. An older copy still running
+      // (another window) keeps its file locked: then this one gets a name of its own.
+      const old = oldName(target);
+      renameSync(target, old);
       try {
         copyFileSync(join(dir, asset), target);
       } catch (error) {
-        renameSync(`${target}.old`, target);
+        renameSync(old, target);
         throw error;
       }
     } else {
@@ -131,12 +132,32 @@ export async function runUpdate(current: string): Promise<number> {
 }
 
 /** Removes the previous .exe left behind by an update on Windows. */
+/** Where the running .exe goes during an update: "<exe>.old", or "<exe>.old-<time>" while that one is locked. */
+function oldName(target: string): string {
+  try {
+    rmSync(`${target}.old`, { force: true });
+    return `${target}.old`;
+  } catch {
+    return `${target}.old-${Date.now()}`;
+  }
+}
+
+/** Removes the previous .exe files left behind by updates on Windows; locked ones wait for a later start. */
 export function cleanUpAfterUpdate(): void {
   if (!isCompiled()) return;
+  const name = basename(process.execPath);
+  let files: string[] = [];
   try {
-    rmSync(`${process.execPath}.old`, { force: true });
+    files = readdirSync(dirname(process.execPath)).filter((f) => f === `${name}.old` || f.startsWith(`${name}.old-`));
   } catch {
-    // still in use (the version that just updated is closing): removed on a later start
+    return;
+  }
+  for (const f of files) {
+    try {
+      rmSync(join(dirname(process.execPath), f), { force: true });
+    } catch {
+      // still in use (another window, or the version that just updated is closing)
+    }
   }
 }
 

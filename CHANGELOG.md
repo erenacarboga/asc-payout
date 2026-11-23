@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.1
+
+- Windows: updating no longer stops when an older copy of asc-payout is still open in another window (its file is locked). The running program is moved aside under a name of its own, and old copies are removed on a later start once they are closed.
+
 ## 1.7.0
 
 - `asc-payout mcp`: a Model Context Protocol server over stdio, so AI assistants (Claude Desktop, Claude Code, VS Code, Cursor, ...) can ask asc-payout directly. Tools: accounts, a month, history, subscriptions, refunds and cancellations, profit after Apple Ads. Each runs the matching command with `--json`, so the numbers are the ones the terminal shows. Runs locally; keys never leave the computer.
