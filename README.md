@@ -83,7 +83,7 @@ One key is enough: app names come from your app list, and in-app purchases are m
 Type `asc-payout` (or `ascp`). A menu opens; everything the tool can do is in it, no options to learn:
 
 ```
-  asc-payout 1.8.2   All accounts  ·  USD
+  asc-payout 1.8.3   All accounts  ·  USD
 
 ? What would you like to see?
   t This month so far           November 2026  ·  Nov 1 - Nov 28, 2026  ·  running
@@ -230,7 +230,7 @@ Ask in plain words, in any language: *"what will Apple pay me for October?"*, *"
 2. Download [asc-payout.mcpb](https://github.com/erenacarboga/asc-payout/releases/latest/download/asc-payout.mcpb) and open it: Claude Desktop asks to install the extension. (Or Settings > Extensions > Install Extension.)
 3. Ask in any chat. Claude uses the extension's tools: accounts, a month, history, subscriptions, refunds and cancellations, profit after Apple Ads.
 
-The extension starts the installed `asc-payout` with `asc-payout mcp`. If it can't find it, Claude tells you how to install it; if it lives somewhere unusual, set its path in the extension's settings.
+The extension starts the installed `asc-payout` with `asc-payout mcp`. If it can't find it, Claude tells you how to install it; if it lives somewhere unusual, set its path in the extension's settings. If the extension can't connect, its log is `asc-payout-extension.log` in your temp folder (Windows: `%TEMP%`).
 
 ### Any MCP client: `asc-payout mcp`
 

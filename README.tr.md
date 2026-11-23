@@ -120,7 +120,7 @@ Normal cümlelerle, istediğiniz dilde sorun: *"Apple Ekim için bana ne kadar �
 2. [asc-payout.mcpb](https://github.com/erenacarboga/asc-payout/releases/latest/download/asc-payout.mcpb) dosyasını indirip açın: Claude Desktop uzantıyı kurmayı önerir. (Ya da Ayarlar > Uzantılar > Uzantı Yükle.)
 3. Herhangi bir sohbette sorun. Claude uzantının araçlarını kullanır: hesaplar, bir ay, geçmiş, abonelikler, iadeler ve iptaller, Apple Ads sonrası kâr.
 
-Uzantı, kurulu `asc-payout`'u `asc-payout mcp` ile başlatır. Bulamazsa Claude size nasıl kuracağınızı söyler; alışılmadık bir yerdeyse yolunu uzantının ayarlarından verebilirsiniz.
+Uzantı, kurulu `asc-payout`'u `asc-payout mcp` ile başlatır. Bulamazsa Claude size nasıl kuracağınızı söyler; alışılmadık bir yerdeyse yolunu uzantının ayarlarından verebilirsiniz. Uzantı bağlanamazsa kaydı geçici klasördeki `asc-payout-extension.log` dosyasındadır (Windows: `%TEMP%`).
 
 ### Her MCP istemcisi: `asc-payout mcp`
 

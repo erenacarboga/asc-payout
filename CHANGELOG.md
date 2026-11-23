@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.3
+
+- Claude Desktop extension: it now connects. Claude Desktop runs extensions with its own Node in a helper process, whose standard streams can't be handed to another program; the extension now passes the messages between Claude Desktop and asc-payout itself.
+- The extension keeps a short log, `asc-payout-extension.log` in the temp folder (what it started, which asc-payout it found, how it ended), to see why if it ever can't connect.
+
 ## 1.8.2
 
 - The short name `ascp` is only made next to an installed `asc-payout`: running a downloaded build directly (for example `asc-payout-darwin-arm64` in the Downloads folder) no longer leaves an `ascp` link beside it. 1.8.1's release had picked up such a link as an extra file; it has been removed.

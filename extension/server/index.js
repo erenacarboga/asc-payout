@@ -5,12 +5,27 @@
 "use strict";
 
 const { spawn, spawnSync } = require("node:child_process");
-const { existsSync, statSync } = require("node:fs");
-const { homedir } = require("node:os");
+const { appendFileSync, existsSync, statSync, writeFileSync } = require("node:fs");
+const { homedir, tmpdir } = require("node:os");
 const { delimiter, join } = require("node:path");
 const readline = require("node:readline");
 
 const windows = process.platform === "win32";
+
+// What happened, for when something doesn't work: <temp folder>/asc-payout-extension.log
+const LOG = join(tmpdir(), "asc-payout-extension.log");
+function log(message) {
+  try {
+    if (existsSync(LOG) && statSync(LOG).size > 512 * 1024) writeFileSync(LOG, "");
+    appendFileSync(LOG, `${new Date().toISOString()} ${message}\n`);
+  } catch {
+    // no log, no harm
+  }
+}
+process.on("uncaughtException", (error) => {
+  log(`error: ${error && error.stack ? error.stack : error}`);
+  process.exit(1);
+});
 const exe = windows ? "asc-payout.exe" : "asc-payout";
 
 function isFile(path) {
@@ -52,20 +67,44 @@ function versionOf(path) {
 
 const older = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 
+log(`start · node ${process.version} · ${process.execPath} · stdin ${process.stdin.isTTY ? "tty" : "pipe"}`);
 const program = findProgram();
 const version = program ? versionOf(program) : null;
+log(`program ${program || "not found"}${version ? ` · ${version.join(".")}` : ""}`);
 if (program && version && older(version, FIRST_VERSION) < 0) {
   standIn(
     `asc-payout ${version.join(".")} is installed, but this extension needs ${FIRST_VERSION.join(".")} or newer.\n\n` +
       "Update it in a terminal:  asc-payout update\nThen restart Claude Desktop (or turn the asc-payout extension off and on).",
   );
 } else if (program) {
-  const child = spawn(program, ["mcp"], { stdio: "inherit", windowsHide: true });
+  // Messages are passed on explicitly rather than handing over this process's own stdin
+  // and stdout: Claude Desktop runs extensions in a helper process whose streams are not
+  // always real handles a child program could use.
+  const child = spawn(program, ["mcp"], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  let sent = 0;
+  let received = 0;
+  process.stdin.on("data", (chunk) => {
+    sent++;
+    child.stdin.write(chunk);
+  });
+  process.stdin.on("end", () => child.stdin.end());
+  child.stdout.on("data", (chunk) => {
+    received++;
+    process.stdout.write(chunk);
+  });
+  child.stderr.on("data", (chunk) => {
+    process.stderr.write(chunk);
+    log(`asc-payout: ${String(chunk).trim()}`);
+  });
   child.on("error", (error) => {
+    log(`could not start ${program}: ${error.message}`);
     process.stderr.write(`asc-payout could not start: ${error.message}\n`);
     process.exit(1);
   });
-  child.on("exit", (code) => process.exit(code ?? 0));
+  child.on("exit", (code, signal) => {
+    log(`asc-payout ended · code ${code} · signal ${signal} · ${sent} chunks in, ${received} out`);
+    process.exit(code ?? 0);
+  });
   for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => child.kill(signal));
 } else {
   standIn();
@@ -73,6 +112,7 @@ if (program && version && older(version, FIRST_VERSION) < 0) {
 
 /** Not installed (or too old): one tool that tells the person what to do. */
 function standIn(reason) {
+  log(`stand-in: ${reason ? "asc-payout too old" : "asc-payout not found"}`);
   const help = reason || [
     "asc-payout is not installed on this computer (or not where the extension looks).",
     "",

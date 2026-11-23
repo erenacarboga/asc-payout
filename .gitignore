@@ -12,3 +12,4 @@ release/
 Thumbs.db
 .idea/
 .vscode/
+dist/
