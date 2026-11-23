@@ -120,8 +120,8 @@ export function renderMonth(r: MonthResult, options: RenderOptions = {}): string
   for (const problem of t.problems) out.push(yellow(`            ${problem}`));
   if (t.forecast) {
     out.push(
-      `  Forecast  ~${m(t.forecast.total)} for the whole month` +
-        dim(`  (${t.forecast.remainingDays} more day(s) at ${m(t.forecast.perDay)}/day, the last ${t.forecast.basisDays} days' average)`),
+      `  Forecast  ~${m(t.forecast.total)} for the month` +
+        dim(`  (${t.forecast.remainingDays} days left × ${m(t.forecast.perDay)}, ${t.forecast.basisDays}-day average)`),
     );
   }
   if (hasReports && t.total !== 0 && !t.skipped) {

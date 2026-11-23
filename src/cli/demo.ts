@@ -30,9 +30,9 @@ const COUNTRY_SHARE: [string, number][] = [
 function dailyShape(dates: string[]): number[] {
   const raw = dates.map((d, i) => {
     const weekday = new Date(toMs(d)).getUTCDay();
-    const weekend = weekday === 0 || weekday === 6 ? 1.45 : 1;
-    const wave = 1 + 0.18 * Math.sin(i * 1.7) + 0.1 * Math.cos(i * 0.6);
-    return weekend * wave * (1 + i / dates.length / 3);
+    const weekend = weekday === 0 || weekday === 6 ? 1.9 : weekday === 1 ? 0.6 : 1;
+    const wave = 1 + 0.45 * Math.sin(i * 1.7) + 0.25 * Math.cos(i * 0.6);
+    return Math.max(0.15, weekend * wave * (1 + i / dates.length));
   });
   const total = raw.reduce((a, b) => a + b, 0);
   return raw.map((v) => v / total);

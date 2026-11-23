@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.1
+
+- Builds for Windows ARM64 and musl Linux (Alpine); the installers pick them automatically.
+- Every release carries a Homebrew formula and a Scoop manifest (see docs/publishing.md).
+- Animated demo in the README, rendered from docs/demo.tape with made-up data.
+- Shorter forecast line, so it fits 80 columns.
+
 ## 1.4.0
 
 - `asc-payout subs`: active subscriptions per app (paying, free trials, billing retry and grace period), MRR, and the last 30 days of trials, trial-to-paid conversions, new paid subscriptions, renewals, cancellations and refunds (`--days N`).
