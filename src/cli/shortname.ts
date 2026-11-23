@@ -63,7 +63,8 @@ function sameFile(a: string, b: string): boolean {
  * problem (a read-only folder, another program's ascp) just leaves things as they are.
  */
 export function ensureShortName(main: string, platform: string = process.platform): "created" | "renewed" | "present" | "skipped" {
-  if (managed(main) || !existsSync(main)) return "skipped";
+  // only next to an installed asc-payout, not a downloaded build such as asc-payout-darwin-arm64
+  if (managed(main) || !existsSync(main) || basename(main).toLowerCase() !== `asc-payout${exe(platform)}`) return "skipped";
   const link = join(dirname(main), SHORT + exe(platform));
   try {
     if (platform === "win32") {

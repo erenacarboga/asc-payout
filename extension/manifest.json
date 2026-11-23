@@ -3,7 +3,7 @@
   "manifest_version": "0.3",
   "name": "asc-payout",
   "display_name": "asc-payout: App Store earnings",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Ask what Apple will pay you: earnings per fiscal month, history, subscriptions and MRR, refunds and cancellations, and profit after Apple Ads, from your own App Store Connect data.",
   "long_description": "Answers App Store earnings questions with the asc-payout program installed on this computer, using the accounts you set up with `asc-payout setup`. Runs locally: your API keys never leave your computer, only the results reach the conversation.\n\nNeeds asc-payout installed and an account set up. See https://github.com/erenacarboga/asc-payout",
   "author": {

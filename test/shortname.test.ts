@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readdirSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, win32 } from "node:path";
+import { basename, join, win32 } from "node:path";
 import { ensureShortName, mainExecutable } from "../src/cli/shortname";
 
 // a stand-in for a compiled asc-payout: big enough, with the repository named in it
@@ -44,6 +44,14 @@ describe("short name ascp", () => {
     writeFileSync(join(other, "ascp.exe"), "a different program");
     expect(ensureShortName(otherMain, "win32")).toBe("skipped");
     expect(statSync(join(other, "ascp.exe")).size).toBe("a different program".length);
+  });
+
+  test("a downloaded build that is not installed as asc-payout gets no short name", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ascp-dl-"));
+    const build = join(dir, process.platform === "win32" ? "asc-payout-windows-x64.exe" : "asc-payout-linux-x64");
+    fakeBuild(build, "1");
+    expect(ensureShortName(build)).toBe("skipped");
+    expect(readdirSync(dir)).toEqual([basename(build)]);
   });
 
   test("Homebrew and Scoop installs are left to the package manager", () => {

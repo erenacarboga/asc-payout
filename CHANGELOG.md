@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.2
+
+- The short name `ascp` is only made next to an installed `asc-payout`: running a downloaded build directly (for example `asc-payout-darwin-arm64` in the Downloads folder) no longer leaves an `ascp` link beside it. 1.8.1's release had picked up such a link as an extra file; it has been removed.
+
 ## 1.8.1
 
 - `ascp`: the short name, the same program as `asc-payout`. On Windows `ascp.exe` is a hard link to `asc-payout.exe` (no extra space, starts like any program, no "Terminate batch job" prompt); on macOS and Linux a symbolic link. The installers create it, Homebrew and Scoop install it too, and an existing installation gets it on its next start. An `ascp` that belongs to another program (IBM Aspera has one) is never touched.
