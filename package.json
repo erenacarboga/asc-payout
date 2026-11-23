@@ -1,6 +1,6 @@
 {
   "name": "asc-payout",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "What Apple will pay you, per Apple fiscal month: Financial Reports and Sales Trends side by side, for one or many App Store Connect accounts",
   "type": "module",
   "license": "MIT",

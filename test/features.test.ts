@@ -71,12 +71,23 @@ describe("subscriptions", () => {
     expect(lines.find((l) => l.subscription === "Pro Monthly")!.paying).toBe(4);
   });
 
+  test("pay-up-front offers pay, but not every period: they stay out of MRR", () => {
+    const text = [
+      SNAP_HEADER.join("\t"),
+      snapRow("Notes", "Plus Monthly", "1 Month", "6.00", "USD", { "Active Pay Up Front Introductory Offer Subscriptions": 2 }),
+      snapRow("Notes", "Plus Monthly", "1 Month", "2.00", "USD", { "Active Pay As You Go Introductory Offer Subscriptions": 3 }),
+    ].join("\n");
+    const [line] = readSubscriptionSnapshot(text);
+    expect(line.paying).toBe(5);
+    expect(line.monthly.USD).toBeCloseTo(3 * 2, 6);
+  });
+
   test("events are added up per app", () => {
     const e = readSubscriptionEvents([
       events([["Start Introductory Offer", "Notes", 5], ["Paid Subscription from Introductory Offer", "Notes", 2], ["Cancel", "Paint", 1]]),
-      events([["Start Introductory Offer", "Notes", 3], ["Renewal from Billing Retry", "Notes", 1]]),
+      events([["Start Introductory Offer", "Notes", 3], ["Renewal from Billing Retry", "Notes", 1], ["Renewals from Grace Period", "Notes", 1]]),
     ]);
-    expect(e.get("Notes")).toMatchObject({ trialStarts: 8, trialConversions: 2, billingRecovered: 1 });
+    expect(e.get("Notes")).toMatchObject({ trialStarts: 8, trialConversions: 2, billingRecovered: 2 });
     expect(e.get("Paint")!.cancellations).toBe(1);
   });
 
@@ -187,6 +198,10 @@ describe("refunds and cancellations", () => {
       ["", "Billing Retry from Paid Subscription", "Notes", "900001", "Plus Weekly", "", "2"].join("\t"),
       ["", "Renewal from Billing Retry", "Notes", "900001", "Plus Weekly", "", "1"].join("\t"),
       ["", "Canceled from Billing Retry", "Notes", "900001", "Plus Weekly", "", "1"].join("\t"),
+      // grace period: entering it is a payment problem, moving on to billing retry is not a second one
+      ["", "Grace Period from Paid Subscription", "Notes", "900001", "Plus Weekly", "", "1"].join("\t"),
+      ["", "Billing Retry from Grace Period", "Notes", "900001", "Plus Weekly", "", "1"].join("\t"),
+      ["", "Renewals from Grace Period", "Notes", "900001", "Plus Weekly", "", "1"].join("\t"),
     ].join("\n");
     const inner = globalThis.fetch;
     globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
@@ -202,24 +217,24 @@ describe("refunds and cancellations", () => {
     const r = JSON.parse(output.join("\n")).churn[0];
     expect(r.window).toMatchObject({ days: 7, to: yesterday, available: 7 });
     const notes = r.apps.find((a: { app: string }) => a.app === "Notes");
-    expect(notes).toMatchObject({ trialStarts: 6, conversions: 2, newPaid: 1, cancellations: 5, sold: 1, refunded: 1 });
+    expect(notes).toMatchObject({ trialStarts: 6, conversions: 2, newPaid: 1, cancellations: 4, sold: 1, refunded: 1 });
     expect(notes.refundAmount).toBeCloseTo(4.24, 6);
     expect(r.reasons).toEqual({ Price: 3, "Not given": 1 });
-    expect(r.billing).toEqual({ entered: 2, recovered: 1, lost: 1 });
-    expect(r.weeks.at(-1)).toMatchObject({ trialStarts: 6, conversions: 2, cancellations: 5 });
+    expect(r.billing).toEqual({ entered: 3, recovered: 2, lost: 1 });
+    expect(r.weeks.at(-1)).toMatchObject({ trialStarts: 6, conversions: 2, cancellations: 4 });
 
     output = [];
     expect(await run(["churn", "--days", "7", "--csv"])).toBe(0);
     const csv = output.join("\n").split("\r\n");
     expect(csv[0]).toStartWith("account,from,to,app,trial_starts");
-    expect(csv.some((l) => l.includes(",Notes,6,2,1,5,1,1,4.24,USD"))).toBe(true);
+    expect(csv.some((l) => l.includes(",Notes,6,2,1,4,1,1,4.24,USD"))).toBe(true);
 
     output = [];
     expect(await run(["churn", "--days", "7"])).toBe(0);
     const text = output.join("\n");
     expect(text).toContain("Refunds and cancellations");
     expect(text).toContain("Why       Price 3");
-    expect(text).toContain("1 recovered");
+    expect(text).toContain("2 recovered");
   });
 });
 
@@ -263,5 +278,30 @@ describe("monthly goals", () => {
   test("the demo shows a goal", async () => {
     expect(await run(["demo"])).toBe(0);
     expect(output.join("\n")).toMatch(/Goal {6}█+░* +\d+%/);
+  });
+});
+
+describe("update check", () => {
+  test("a newer release is found, and a skipped version is remembered", async () => {
+    const { newerRelease, skipVersion } = await import("../src/cli/update");
+    const { rmSync } = await import("node:fs");
+    rmSync(join(process.env.ASC_PAYOUT_CACHE_DIR!, "update-check.json"), { force: true });
+    const saved = process.env.ASC_PAYOUT_NO_UPDATE_CHECK;
+    delete process.env.ASC_PAYOUT_NO_UPDATE_CHECK;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return new Response(JSON.stringify({ tag_name: "v9.1.0" }), { status: 200 });
+    }) as unknown as typeof fetch;
+    try {
+      expect(await newerRelease("9.0.0")).toEqual({ version: "9.1.0", skipped: false });
+      expect(await newerRelease("9.1.0")).toBeNull();
+      expect(calls).toBe(1); // a fresh answer is reused
+      skipVersion("9.1.0");
+      expect(await newerRelease("9.0.0")).toEqual({ version: "9.1.0", skipped: true });
+    } finally {
+      if (saved !== undefined) process.env.ASC_PAYOUT_NO_UPDATE_CHECK = saved;
+      rmSync(join(process.env.ASC_PAYOUT_CACHE_DIR!, "update-check.json"), { force: true });
+    }
   });
 });

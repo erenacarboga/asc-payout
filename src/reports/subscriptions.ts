@@ -42,7 +42,11 @@ const SNAPSHOT_COLUMNS = {
   trial: "Active Free Trial Introductory Offer Subscriptions",
 } as const;
 
-/** Paid offer states: they bring money in, at the row's (discounted) price */
+/**
+ * Paid offer states: they bring money in, at the row's (discounted) price. A pay-as-you-go
+ * offer pays that price every period; a pay-up-front offer paid it once for the whole offer,
+ * whose length the report doesn't give, so those count as paying but not toward MRR.
+ */
 const PAID_OFFER_COLUMNS = [
   "Active Pay Up Front Introductory Offer Subscriptions",
   "Active Pay As You Go Introductory Offer Subscriptions",
@@ -62,6 +66,7 @@ export function readSubscriptionSnapshot(text: string): SubscriptionLine[] {
   const c = columns(header, SNAPSHOT_COLUMNS, "Subscription report");
   const idx = (names: string[]) => names.map((n) => header.indexOf(n)).filter((i) => i >= 0);
   const paid = idx(PAID_OFFER_COLUMNS);
+  const upFront = idx(PAID_OFFER_COLUMNS.filter((n) => /Up Front/.test(n)));
   const free = idx(FREE_OFFER_COLUMNS);
   const issues = idx(ISSUE_COLUMNS);
   const count = (r: string[], list: number[]) => list.reduce((s, i) => s + (Number(r[i]) || 0), 0);
@@ -77,6 +82,7 @@ export function readSubscriptionSnapshot(text: string): SubscriptionLine[] {
       lines.set(key, line);
     }
     const paying = (Number(r[c.standard]) || 0) + count(r, paid);
+    const recurring = paying - count(r, upFront);
     line.paying += paying;
     line.trials += (Number(r[c.trial]) || 0) + count(r, free);
     line.billingIssues += count(r, issues);
@@ -84,8 +90,8 @@ export function readSubscriptionSnapshot(text: string): SubscriptionLine[] {
     const days = durationInDays(r[c.duration] ?? "");
     const proceeds = Number(r[c.proceeds]) || 0;
     const currency = (r[c.currency] ?? "").trim();
-    if (days && paying && proceeds && currency) {
-      line.monthly[currency] = (line.monthly[currency] ?? 0) + paying * proceeds * (DAYS_PER_MONTH / days);
+    if (days && recurring && proceeds && currency) {
+      line.monthly[currency] = (line.monthly[currency] ?? 0) + recurring * proceeds * (DAYS_PER_MONTH / days);
     }
   }
   return [...lines.values()];
@@ -110,7 +116,7 @@ const EVENT_GROUPS: [keyof Omit<EventCounts, "all">, RegExp][] = [
   ["renewals", /^Renew$/i],
   ["cancellations", /^Cancel$/i],
   ["refunds", /^Refund$/i],
-  ["billingRecovered", /^Renewal from Billing Retry$/i],
+  ["billingRecovered", /^Renewals? from (Billing Retry|Grace Period)$/i],
 ];
 
 /** Event totals over one or more daily SUBSCRIPTION_EVENT reports, per app. */

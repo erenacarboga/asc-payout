@@ -138,4 +138,13 @@ export const TR_MAIN: Record<string, string> = {
   "--currency expects a 3-letter code like USD, EUR or TRY": "--currency USD, EUR ya da TRY gibi 3 harfli bir kod bekler",
   "Error: {message}": "Hata: {message}",
   "See: asc-payout --help": "Yardım: asc-payout --help",
+  "asc-payout {version} is out (you have {current}).": "asc-payout {version} çıktı (sizdeki: {current}).",
+  "What's new: https://github.com/{repo}/releases/tag/v{version}": "Yenilikler: https://github.com/{repo}/releases/tag/v{version}",
+  "Update now?": "Şimdi güncellensin mi?",
+  "Yes, update": "Evet, güncelle",
+  "Not now": "Şimdi değil",
+  "you will be asked next time": "bir dahaki sefere tekrar sorulur",
+  "Skip this version": "Bu sürümü atla",
+  "ask again when a newer one is out": "daha yenisi çıkınca tekrar sorulur",
+  "Carrying on with {current}.": "{current} ile devam ediliyor.",
 };

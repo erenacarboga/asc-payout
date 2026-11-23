@@ -8,7 +8,8 @@ import { t } from "../i18n";
 import { ui } from "./ui";
 
 export const REPO = "erenacarboga/asc-payout";
-const CHECK_EVERY_MS = 24 * 3600 * 1000;
+/** A check younger than this is reused, so a run started again right away doesn't ask GitHub again. */
+const CHECK_EVERY_MS = 15 * 60 * 1000;
 
 /** -1, 0 or 1, comparing "1.2.0" style versions (a leading "v" is ignored). */
 export function compareVersions(a: string, b: string): number {
@@ -131,24 +132,90 @@ export async function runUpdate(current: string): Promise<number> {
 
 /** Removes the previous .exe left behind by an update on Windows. */
 export function cleanUpAfterUpdate(): void {
-  if (isCompiled()) rmSync(`${process.execPath}.old`, { force: true });
+  if (!isCompiled()) return;
+  try {
+    rmSync(`${process.execPath}.old`, { force: true });
+  } catch {
+    // still in use (the version that just updated is closing): removed on a later start
+  }
+}
+
+interface UpdateCheck {
+  checkedAt: number;
+  latest: string | null;
+  /** a version the person chose to skip */
+  skipped?: string;
+}
+
+const checkFile = () => join(cacheDir(), "update-check.json");
+
+function saveCheck(check: UpdateCheck): void {
+  try {
+    writeFileAtomic(checkFile(), JSON.stringify(check));
+  } catch {
+    // not important
+  }
 }
 
 /**
- * At most once a day, a quiet note when a newer release exists. Uses GitHub's public API
+ * The newest release when it is newer than `current`, else null. Uses GitHub's public API
  * only and gives up after 2 seconds, so it never slows anything down.
  */
-export async function updateHint(current: string): Promise<string | null> {
-  const file = join(cacheDir(), "update-check.json");
-  const last = readJson<{ checkedAt: number; latest: string | null }>(file);
+export async function newerRelease(current: string): Promise<{ version: string; skipped: boolean } | null> {
+  const last = readJson<UpdateCheck>(checkFile());
   let latest = last?.latest ?? null;
   if (!last || Date.now() - last.checkedAt > CHECK_EVERY_MS) {
     latest = await latestVersion(2000, false);
-    try {
-      writeFileAtomic(file, JSON.stringify({ checkedAt: Date.now(), latest }));
-    } catch {
-      // not important
-    }
+    saveCheck({ checkedAt: Date.now(), latest, ...(last?.skipped ? { skipped: last.skipped } : {}) });
   }
-  return latest && compareVersions(latest, current) > 0 ? t("asc-payout {version} is available: run  asc-payout update", { version: latest.replace(/^v/, "") }) : null;
+  if (!latest || compareVersions(latest, current) <= 0) return null;
+  return { version: latest.replace(/^v/, ""), skipped: !!last?.skipped && compareVersions(last.skipped, latest) === 0 };
+}
+
+/** Remembers not to ask about this version again. */
+export function skipVersion(version: string): void {
+  const last = readJson<UpdateCheck>(checkFile());
+  saveCheck({ checkedAt: last?.checkedAt ?? Date.now(), latest: last?.latest ?? version, skipped: version });
+}
+
+/** A quiet note for the home menu when a newer release exists. */
+export async function updateHint(current: string): Promise<string | null> {
+  const newer = await newerRelease(current);
+  return newer ? t("asc-payout {version} is available: run  asc-payout update", { version: newer.version }) : null;
+}
+
+/**
+ * On an interactive start of the installed program: if a newer release is out, ask whether
+ * to update now. After updating, the new version starts in its place with the same
+ * arguments; the result is its exit code. null: carry on with this version.
+ */
+export async function offerUpdate(current: string, argv: string[]): Promise<number | null> {
+  if (!isCompiled() || !ui.interactive() || process.env.ASC_PAYOUT_NO_UPDATE_CHECK) return null;
+  const newer = await newerRelease(current).catch(() => null);
+  if (!newer || newer.skipped) return null;
+  ui.print("");
+  ui.print(`  ${t("asc-payout {version} is out (you have {current}).", { version: newer.version, current })}`);
+  ui.print(`  ${t("What's new: https://github.com/{repo}/releases/tag/v{version}", { repo: REPO, version: newer.version })}`);
+  ui.print("");
+  const answer = await ui.pick<"yes" | "later" | "skip">({
+    message: t("Update now?"),
+    back: false,
+    items: [
+      { label: t("Yes, update"), value: "yes", key: "y" },
+      { label: t("Not now"), value: "later", key: "n", hint: t("you will be asked next time") },
+      { label: t("Skip this version"), value: "skip", key: "s", hint: t("ask again when a newer one is out") },
+    ],
+  });
+  if (answer === "skip") skipVersion(newer.version);
+  if (answer !== "yes") return null;
+  try {
+    await runUpdate(current);
+  } catch (error) {
+    ui.print(`  ${(error as Error).message}`);
+    ui.print(`  ${t("Carrying on with {current}.", { current })}`);
+    return null;
+  }
+  // start the new version, which now sits where this one was
+  const child = Bun.spawn([process.execPath, ...argv], { stdio: ["inherit", "inherit", "inherit"] });
+  return await child.exited;
 }

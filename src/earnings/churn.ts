@@ -43,10 +43,12 @@ export interface ChurnResult {
 const TRIAL = /^Start Introductory Offer$/i;
 const CONVERTED = /^Paid Subscription from Introductory Offer$/i;
 const SUBSCRIBED = /^Subscribe$/i;
-const CANCELLED = /^Cancel(ed from Billing Retry)?$/i;
-const ENTERED_BILLING = /^Billing Retry from /i;
+/** turned off auto-renew; losing a subscription to a failed payment is counted under billing */
+const CANCELLED = /^Cancel$/i;
+/** a payment failed: into billing retry or grace period, but not from one into the other */
+const ENTERED_BILLING = /^(Billing Retry|Grace Period) from (?!Grace Period|Billing Retry)/i;
 const RECOVERED = /^Renewals? from (Billing Retry|Grace Period)$/i;
-const LOST = /^Canceled from Billing Retry$/i;
+const LOST = /^Canceled from (Billing Retry|Grace Period)$/i;
 /** key of cancellations without a reason (Apple's reasons are kept as Apple writes them) */
 const NOT_GIVEN = "Not given";
 
@@ -112,7 +114,7 @@ export async function computeChurn(account: Account, opts: ChurnOptions): Promis
         a.cancellations += qty;
         if (w) w.cancellations += qty;
         const reason = reasonAt >= 0 ? (r[reasonAt] ?? "").trim() : "";
-        if (/^Cancel$/i.test(event)) reasons[reason || NOT_GIVEN] = (reasons[reason || NOT_GIVEN] ?? 0) + qty;
+        reasons[reason || NOT_GIVEN] = (reasons[reason || NOT_GIVEN] ?? 0) + qty;
       }
       if (ENTERED_BILLING.test(event)) billing.entered += qty;
       if (RECOVERED.test(event)) billing.recovered += qty;

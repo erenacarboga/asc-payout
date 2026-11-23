@@ -22,7 +22,7 @@ import { BACK, QUIT } from "./prompts";
 import { runSetup, showStatus } from "./setup";
 import { startSpinner } from "./spinner";
 import { ui } from "./ui";
-import { cleanUpAfterUpdate, runUpdate, updateHint } from "./update";
+import { cleanUpAfterUpdate, offerUpdate, runUpdate, updateHint } from "./update";
 import { runWatch } from "./watch";
 
 export const VERSION: string = pkg.version;
@@ -761,6 +761,12 @@ export async function run(argv: string[]): Promise<number> {
   if (args.json || args.csv) process.env.ASC_PAYOUT_LANG = "en";
   cleanUpAfterUpdate();
   clearScreen(args);
+  // a person at a terminal is asked whether to update first (not scripts, --json, --csv)
+  const asks = !args.json && !args.csv && !["help", "version", "update", "watch"].includes(args.command);
+  if (asks) {
+    const exit = await offerUpdate(VERSION, argv);
+    if (exit !== null) return exit;
+  }
   switch (args.command) {
     case "help":
       ui.print(HELP);

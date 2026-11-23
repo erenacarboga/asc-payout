@@ -58,7 +58,9 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/install.ps1 | iex
 ```
 
-Builds for Windows (x64, ARM64), macOS (Apple silicon, Intel) and Linux (x64, arm64, and musl for Alpine). The installer checks the SHA-256 of the download and puts `asc-payout` on your PATH: on Windows in your user PATH, on macOS and Linux by adding one line to your shell's startup file (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` or fish config). `ASC_PAYOUT_NO_MODIFY_PATH=1` leaves PATH alone. Open a new terminal afterwards and type `asc-payout`. Run the installer again to update.
+Builds for Windows (x64, ARM64), macOS (Apple silicon, Intel) and Linux (x64, arm64, and musl for Alpine). The installer checks the SHA-256 of the download and puts `asc-payout` on your PATH: on Windows in your user PATH, on macOS and Linux by adding one line to your shell's startup file (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` or fish config). `ASC_PAYOUT_NO_MODIFY_PATH=1` leaves PATH alone. Open a new terminal afterwards and type `asc-payout`.
+
+**Updates:** when a new version is out, `asc-payout` asks on start whether to update now (yes, not now, or skip this version); on yes it updates itself, checks the download's SHA-256, and opens again on the new version. `asc-payout update` does the same without asking, and running the installer again works too. Scripts, `--json`, `--csv` and `watch` are never asked (`ASC_PAYOUT_NO_UPDATE_CHECK=1` turns the check off).
 
 
 ## Set up
@@ -81,7 +83,7 @@ One key is enough: app names come from your app list, and in-app purchases are m
 Type `asc-payout`. A menu opens; everything the tool can do is in it, no options to learn:
 
 ```
-  asc-payout 1.6.0   All accounts  ·  USD
+  asc-payout 1.6.1   All accounts  ·  USD
 
 ? What would you like to see?
   t This month so far           November 2026  ·  Nov 1 - Nov 28, 2026  ·  running
@@ -133,7 +135,7 @@ On a month, press **d** and pick an app: its products, a bar per day, refunds (u
   Billing   21 had a payment problem  ·  14 recovered  ·  4 lost  (78% saved)
 ```
 
-Trials started and how many became paid in the same days, cancellations and why (Apple's reason), billing problems and how many Apple recovered, and refunds by app. From the daily subscription event reports and the Sales reports.
+Trials started and how many became paid in the same days, cancellations (turning off renewal) and why (Apple's reason), billing problems (a failed payment, into billing retry or a grace period) and how many Apple recovered or lost, and refunds by app. From the daily subscription event reports and the Sales reports.
 
 ### Monthly goals
 
@@ -242,7 +244,7 @@ For scripts and CI, an account can come from environment variables instead of se
 
 ## Subscriptions
 
-`asc-payout subs` reads Apple's subscription reports: on the latest published day, how many subscriptions pay (standard price or a paid offer), how many are in a free trial and how many have a billing problem, per app, with the monthly recurring proceeds (MRR: weekly × 4.35, yearly ÷ 12, at each subscription's current price, before tax). Below it, the last 30 days of events: new trials, trial-to-paid conversions, new paid subscriptions, renewals, cancellations and refunds. Apple sometimes answers "no sales" for a snapshot that is only late; asc-payout then uses the day before instead of showing zero.
+`asc-payout subs` reads Apple's subscription reports: on the latest published day, how many subscriptions pay (standard price or a paid offer), how many are in a free trial and how many have a billing problem, per app, with the monthly recurring proceeds (MRR: what you receive per period, weekly × 4.35, yearly ÷ 12, at each subscription's current price, before tax; a pay-up-front offer counts as paying but not toward MRR, because Apple's report doesn't say how many months it covers). Below it, the last 30 days of events: new trials, trial-to-paid conversions, new paid subscriptions, renewals, cancellations and refunds. Apple sometimes answers "no sales" for a snapshot that is only late; asc-payout then uses the day before instead of showing zero.
 
 ## Privacy
 

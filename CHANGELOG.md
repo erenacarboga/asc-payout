@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.1
+
+- On start, when a new version is out, asc-payout asks whether to update now (yes, not now, or skip this version). On yes it updates itself and opens again on the new version. Not asked in scripts, with `--json`, `--csv` or `watch`, or with `ASC_PAYOUT_NO_UPDATE_CHECK=1`.
+- Refunds and cancellations: a subscription going into a grace period counts as a payment problem, and moving from the grace period into billing retry no longer counts as a second one. Recoveries from a grace period count as recovered.
+- Cancellations are the people who turned off renewal, the same number on the Subscriptions and the Refunds and cancellations screens; subscriptions lost to a failed payment are shown under billing ("lost").
+- Subscriptions: recoveries from a grace period count as recovered; a pay-up-front offer counts as paying but not toward MRR (Apple's report gives its price for the whole offer, not per month).
+- The Windows installer honours `ASC_PAYOUT_NO_MODIFY_PATH=1`, like the macOS and Linux one.
+
 ## 1.6.0
 
 - **App details**: press **d** on a month and pick an app: its products, its day-by-day sales, refunds, and the countries it earns in.

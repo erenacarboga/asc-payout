@@ -29,7 +29,9 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/install.ps1 | iex
 ```
 
-Kurulum `asc-payout` komutunu PATH'e ekler: Windows'ta kullanıcı PATH'ine, macOS ve Linux'ta kabuğun ayar dosyasına (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` veya fish) bir satır yazarak. `ASC_PAYOUT_NO_MODIFY_PATH=1` verilirse PATH'e dokunmaz. Sonra yeni bir terminal açıp `asc-payout` yazmanız yeterli. Güncellemek için aynı komut tekrar çalıştırılır.
+Kurulum `asc-payout` komutunu PATH'e ekler: Windows'ta kullanıcı PATH'ine, macOS ve Linux'ta kabuğun ayar dosyasına (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` veya fish) bir satır yazarak. `ASC_PAYOUT_NO_MODIFY_PATH=1` verilirse PATH'e dokunmaz. Sonra yeni bir terminal açıp `asc-payout` yazmanız yeterli.
+
+**Güncellemeler:** yeni bir sürüm çıktığında `asc-payout` açılırken şimdi güncellenip güncellenmeyeceğini sorar (evet, şimdi değil veya bu sürümü atla); evet derseniz kendini günceller, indirilenin SHA-256'sını kontrol eder ve yeni sürümle yeniden açılır. `asc-payout update` aynısını sormadan yapar; kurulum komutunu tekrar çalıştırmak da olur. Betiklerde, `--json`, `--csv` ve `watch` ile hiç sorulmaz (`ASC_PAYOUT_NO_UPDATE_CHECK=1` kontrolü kapatır).
 
 ## Hesap ekleme
 
@@ -104,7 +106,7 @@ Bir sorun olursa `asc-payout doctor` saati, anahtarları, her rapora erişimi, a
 
 `asc-payout churn --days 90` iadeleri, iptalleri ve haftalık deneme dönüşümünü; `asc-payout profit -m 2026-10` uygulama bazında gelir, reklam harcaması, kâr ve ROAS'ı verir.
 
-`asc-payout subs` aktif aboneleri (ödeyen, denemede, ödeme sorunlu), uygulama bazında MRR'ı ve son 30 günün denemelerini, ödemeye geçişlerini, yenilemelerini, iptallerini gösterir. `asc-payout history --year 2026 --csv` bir yılı tabloya aktarılacak şekilde verir. `asc-payout watch` geçen ayın Financial Report'u yayınlanınca bir kez masaüstü bildirimi gönderir; her sabah çalıştırmak için Windows'ta Görev Zamanlayıcı, macOS/Linux'ta cron kullanılabilir.
+`asc-payout subs` aktif aboneleri (ödeyen, denemede, ödeme sorunlu), uygulama bazında MRR'ı (dönem başına eline geçen tutar: haftalık × 4,35, yıllık ÷ 12; peşin ödenen teklifler ödeyen sayılır ama kaç ayı kapsadığı raporda olmadığı için MRR'a katılmaz) ve son 30 günün denemelerini, ödemeye geçişlerini, yenilemelerini, iptallerini gösterir. `asc-payout history --year 2026 --csv` bir yılı tabloya aktarılacak şekilde verir. `asc-payout watch` geçen ayın Financial Report'u yayınlanınca bir kez masaüstü bildirimi gönderir; her sabah çalıştırmak için Windows'ta Görev Zamanlayıcı, macOS/Linux'ta cron kullanılabilir.
 
 Bir şey yüklenirken ekranda hangi adımda olduğunu, günlük raporlar için ilerlemeyi ve geçen süreyi gösteren canlı bir satır görünür; iş bitince silinir.
 
