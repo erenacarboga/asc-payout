@@ -13,7 +13,9 @@
     $ProgressPreference = "SilentlyContinue"
 
     $repo = "erenacarboga/asc-payout"
-    $asset = "asc-payout-windows-x64.exe"
+    # Native build for ARM64 Windows; x64 everywhere else
+    $arch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
+    $asset = if ($arch -eq "ARM64") { "asc-payout-windows-arm64.exe" } else { "asc-payout-windows-x64.exe" }
     $version = $env:ASC_PAYOUT_VERSION
     $binDir = if ($env:ASC_PAYOUT_BIN_DIR) { $env:ASC_PAYOUT_BIN_DIR } else { Join-Path $env:LOCALAPPDATA "Programs\asc-payout" }
 

@@ -25,7 +25,7 @@ export function assetName(platform: string = process.platform, arch: string = pr
   const os = platform === "win32" ? "windows" : platform === "darwin" ? "darwin" : platform === "linux" ? "linux" : null;
   const cpu = arch === "x64" ? "x64" : arch === "arm64" ? "arm64" : null;
   if (!os || !cpu) return null;
-  if (os === "windows") return `asc-payout-windows-${cpu}.exe`;
+  if (os === "windows") return `asc-payout-windows-${cpu}.exe`; // x64 and arm64 builds exist
   return `asc-payout-${os}-${cpu}${os === "linux" && musl ? "-musl" : ""}`;
 }
 

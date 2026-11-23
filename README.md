@@ -39,6 +39,8 @@ One or many accounts (say, a company and a personal developer account), every cu
 
 Try it without an account: `asc-payout demo` (made-up numbers).
 
+![asc-payout demo](docs/demo.gif)
+
 ## Install
 
 macOS and Linux:

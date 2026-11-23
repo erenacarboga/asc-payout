@@ -20,6 +20,10 @@ case "$(uname -s)/$(uname -m)" in
   Linux/aarch64|Linux/arm64) asset="asc-payout-linux-arm64" ;;
   *) echo "asc-payout: no build for $(uname -s) $(uname -m)" >&2; exit 1 ;;
 esac
+# Alpine and other musl-based systems get the musl build
+if [ "$(uname -s)" = Linux ] && { [ -f /etc/alpine-release ] || ldd --version 2>&1 | grep -qi musl; }; then
+  asset="$asset-musl"
+fi
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT

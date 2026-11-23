@@ -26,14 +26,17 @@ jobs:
       - name: Build
         run: |
           mkdir -p release
-          for target in darwin-arm64 darwin-x64 linux-x64 linux-arm64 windows-x64; do
+          for target in darwin-arm64 darwin-x64 linux-x64 linux-arm64 linux-x64-musl linux-arm64-musl windows-x64 windows-arm64; do
             out="release/asc-payout-$target"
-            [ "$target" = windows-x64 ] && out="$out.exe"
+            case "$target" in windows-*) out="$out.exe" ;; esac
             bun build src/main.ts --compile --minify --target="bun-$target" --outfile "$out"
           done
           release/asc-payout-linux-x64 --version
+          release/asc-payout-linux-x64 demo -a all -m 2026-10 > /dev/null
           cp install.sh install.ps1 release/
-          cd release && sha256sum asc-payout-* > SHA256SUMS
+          (cd release && sha256sum asc-payout-* > SHA256SUMS)
+          bun scripts/package-manifests.ts "$GITHUB_REF_NAME" release
+          ruby -c release/asc-payout.rb
 
       - uses: softprops/action-gh-release@v3
         with:
