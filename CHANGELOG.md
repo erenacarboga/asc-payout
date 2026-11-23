@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- The screen is cleared when asc-payout starts, like `clear`; `--no-clear` or `ASC_PAYOUT_NO_CLEAR=1` keeps it. Never for `--json` or piped output.
+- macOS and Linux installer adds the install folder to PATH in your shell's startup file, so `asc-payout` works in new terminals.
+
 ## 1.0.1
 
 - Windows installer no longer changes settings of the PowerShell window it runs in.

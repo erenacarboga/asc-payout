@@ -48,8 +48,30 @@ install -m 0755 "$work/$asset" "$bin_dir/asc-payout"
 [ "$(uname -s)" = Darwin ] && xattr -d com.apple.quarantine "$bin_dir/asc-payout" 2>/dev/null || true
 
 echo "Installed $("$bin_dir/asc-payout" --version) to $bin_dir/asc-payout"
+
+# Make `asc-payout` work in new terminals: add the folder to PATH in the shell's startup
+# file, once. Skip with ASC_PAYOUT_NO_MODIFY_PATH=1.
+add_to_path() {
+  local shell_name rc line
+  shell_name="$(basename "${SHELL:-sh}")"
+  case "$shell_name" in
+    zsh)  rc="${ZDOTDIR:-$HOME}/.zshrc"; line="export PATH=\"$bin_dir:\$PATH\"" ;;
+    bash) if [ "$(uname -s)" = Darwin ]; then rc="$HOME/.bash_profile"; else rc="$HOME/.bashrc"; fi
+          line="export PATH=\"$bin_dir:\$PATH\"" ;;
+    fish) rc="$HOME/.config/fish/conf.d/asc-payout.fish"; line="fish_add_path \"$bin_dir\"" ;;
+    *)    rc="$HOME/.profile"; line="export PATH=\"$bin_dir:\$PATH\"" ;;
+  esac
+  if [ -f "$rc" ] && grep -qF "$line" "$rc"; then return 1; fi
+  mkdir -p "$(dirname "$rc")"
+  printf '\n# asc-payout\n%s\n' "$line" >> "$rc"
+  echo "Added $bin_dir to PATH in $rc"
+}
+
 case ":$PATH:" in
   *":$bin_dir:"*) ;;
-  *) echo "Add it to your PATH, e.g. in ~/.zshrc or ~/.bashrc:  export PATH=\"$bin_dir:\$PATH\"" ;;
+  *)
+    if [ -z "${ASC_PAYOUT_NO_MODIFY_PATH:-}" ]; then add_to_path || true; fi
+    echo "Open a new terminal to use asc-payout (or run now: export PATH=\"$bin_dir:\$PATH\")"
+    ;;
 esac
 echo "Next: asc-payout setup    (or try: asc-payout demo)"

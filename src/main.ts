@@ -121,8 +121,20 @@ function demo(args: Args): number {
   return 0;
 }
 
+/**
+ * Starts from a clean screen, like `clear` / `cls`, when a person is looking at it.
+ * Not for --json, piped output, help or version, and not with --no-clear or ASC_PAYOUT_NO_CLEAR=1.
+ */
+function clearScreen(args: Args): void {
+  const wanted = args.command === "report" || args.command === "setup" || args.command === "status" || args.command === "demo";
+  if (!wanted || args.json || args.noClear || process.env.ASC_PAYOUT_NO_CLEAR || !process.stdout.isTTY) return;
+  // clear the screen and the scrollback, cursor to the top
+  process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
+}
+
 async function main(): Promise<number> {
   const args = parseArgs(process.argv.slice(2));
+  clearScreen(args);
   switch (args.command) {
     case "help":
       console.log(HELP);

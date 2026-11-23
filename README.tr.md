@@ -35,7 +35,7 @@ gh api repos/erenacarboga/asc-payout/contents/install.ps1 -H "Accept: applicatio
 gh api repos/erenacarboga/asc-payout/contents/install.sh -H "Accept: application/vnd.github.raw" | bash
 ```
 
-Güncellemek için aynı komut tekrar çalıştırılır.
+Kurulum `asc-payout` komutunu PATH'e ekler: Windows'ta kullanıcı PATH'ine, macOS ve Linux'ta kabuğun ayar dosyasına (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` veya fish) bir satır yazarak (`ASC_PAYOUT_NO_MODIFY_PATH=1` ile kapatılabilir). Sonra yeni bir terminal açıp `asc-payout` yazmanız yeterli. Güncellemek için aynı komut tekrar çalıştırılır.
 
 ## Hesap ekleme
 
@@ -61,6 +61,8 @@ asc-payout -a all                   tüm hesaplar ve toplam tablo
 asc-payout -m 2026-11 -c TRY        devam eden ay, TL olarak
 asc-payout -a all --json            JSON çıktı
 ```
+
+Program açılınca ekranı temizler; istemezseniz `--no-clear` (veya `ASC_PAYOUT_NO_CLEAR=1`).
 
 `2026-10` gibi bir ay, adını taşıdığı mali aydır: Ekim 2026 = 27 Eylül - 31 Ekim 2026.
 

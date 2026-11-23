@@ -7,6 +7,8 @@ export interface Args {
   currency?: string;
   json: boolean;
   noCache: boolean;
+  /** keep what is on the screen instead of clearing it first */
+  noClear: boolean;
   refresh: boolean;
 }
 
@@ -32,6 +34,7 @@ const VALUE_FLAGS: Record<string, "account" | "month" | "currency"> = {
 const SWITCHES: Record<string, (a: Args) => void> = {
   "--json": (a) => (a.json = true),
   "--no-cache": (a) => (a.noCache = true),
+  "--no-clear": (a) => (a.noClear = true),
   "--refresh": (a) => (a.refresh = true),
   "--help": (a) => (a.command = "help"),
   "-h": (a) => (a.command = "help"),
@@ -44,7 +47,7 @@ const SWITCHES: Record<string, (a: Args) => void> = {
 };
 
 export function parseArgs(argv: string[]): Args {
-  const args: Args = { command: "report", json: false, noCache: false, refresh: false };
+  const args: Args = { command: "report", json: false, noCache: false, noClear: false, refresh: false };
   let commandSet = false;
 
   for (let i = 0; i < argv.length; i++) {
@@ -92,6 +95,7 @@ Options
   -c, --currency <CODE>  show amounts in this currency for this run (USD, EUR, TRY, ...)
       --json             print the result as JSON (progress goes to stderr)
       --no-cache         download the reports again
+      --no-clear         don't clear the screen first (or ASC_PAYOUT_NO_CLEAR=1)
       --refresh          reload app names from App Store Connect
   -h, --help             this help
   -v, --version          version

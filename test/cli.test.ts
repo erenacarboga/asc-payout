@@ -10,7 +10,7 @@ import { accountFromEnv, findAccount, type Settings } from "../src/config/settin
 
 describe("parseArgs", () => {
   test("defaults", () => {
-    expect(parseArgs([])).toEqual({ command: "report", json: false, noCache: false, refresh: false });
+    expect(parseArgs([])).toEqual({ command: "report", json: false, noCache: false, noClear: false, refresh: false });
   });
   test("short and long options, --x=y", () => {
     const a = parseArgs(["-a", "all", "--month=2026-10", "-c", "try", "--json"]);

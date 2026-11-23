@@ -50,7 +50,7 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/erenacarboga/asc-payout/main/install.ps1 | iex
 ```
 
-Builds for Windows x64, macOS (Apple silicon and Intel) and Linux (x64 and arm64). The installer checks the SHA-256 of the download. Run it again to update.
+Builds for Windows x64, macOS (Apple silicon and Intel) and Linux (x64 and arm64). The installer checks the SHA-256 of the download and puts `asc-payout` on your PATH: on Windows in your user PATH, on macOS and Linux by adding one line to your shell's startup file (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile` or fish config; skip with `ASC_PAYOUT_NO_MODIFY_PATH=1`). Open a new terminal afterwards and type `asc-payout`. Run the installer again to update.
 
 <details>
 <summary>While the repository is private</summary>
@@ -99,6 +99,7 @@ asc-payout -a all --json            machine-readable output
 | `--json` | JSON on stdout, progress on stderr |
 | `--no-cache` | download reports again |
 | `--refresh` | reload app names |
+| `--no-clear` | keep the screen; by default it is cleared first (also `ASC_PAYOUT_NO_CLEAR=1`) |
 | `setup`, `status`, `demo` | manage accounts, show where files are, try with made-up data |
 
 For scripts and CI, an account can come from environment variables instead of setup: `ASC_PAYOUT_VENDOR`, `ASC_PAYOUT_ISSUER_ID`, `ASC_PAYOUT_KEY_ID`, `ASC_PAYOUT_KEY_FILE` (and optionally `ASC_PAYOUT_CURRENCY`).
