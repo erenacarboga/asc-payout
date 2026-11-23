@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Windows installer no longer changes settings of the PowerShell window it runs in.
+
 ## 1.0.0
 
 First release.
