@@ -1,5 +1,6 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { configDir, ensureDir, resolveKeyFile, settingsFile } from "./paths";
+import { existsSync, readFileSync } from "node:fs";
+import { writeFileAtomic } from "./files";
+import { resolveKeyFile, settingsFile } from "./paths";
 
 /** An App Store Connect API key. */
 export interface ApiKey {
@@ -59,8 +60,7 @@ export function loadSettings(): Settings {
 }
 
 export function saveSettings(settings: Settings): void {
-  ensureDir(configDir());
-  writeFileSync(settingsFile(), JSON.stringify(settings, null, 2) + "\n", "utf-8");
+  writeFileAtomic(settingsFile(), JSON.stringify(settings, null, 2) + "\n");
 }
 
 export function readKeyFile(key: ApiKey): string {

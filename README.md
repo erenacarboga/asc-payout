@@ -101,6 +101,8 @@ asc-payout -a all --json            machine-readable output
 | `--refresh` | reload app names |
 | `--no-clear` | keep the screen; by default it is cleared first (also `ASC_PAYOUT_NO_CLEAR=1`) |
 | `setup`, `status`, `demo` | manage accounts, show where files are, try with made-up data |
+| `doctor` | check clock, keys, access to each report, network and cache, with the fix for anything wrong |
+| `update` | install the latest release (also told once a day when one is out) |
 
 For scripts and CI, an account can come from environment variables instead of setup: `ASC_PAYOUT_VENDOR`, `ASC_PAYOUT_ISSUER_ID`, `ASC_PAYOUT_KEY_ID`, `ASC_PAYOUT_KEY_FILE` (and optionally `ASC_PAYOUT_CURRENCY`).
 
@@ -112,6 +114,8 @@ For scripts and CI, an account can come from environment variables instead of se
 - **Forecast**, for a running month: sales so far plus the remaining days at the last 7 days' average.
 - **Exchange rates** are the same for both columns, taken on the last day of the month: ECB reference rates ([Frankfurter](https://frankfurter.dev)), then [exchange-api](https://github.com/fawazahmed0/exchange-api) and [open.er-api.com](https://www.exchangerate-api.com) for currencies the ECB doesn't cover. An amount without any rate is listed separately, never counted 1:1.
 - **Reports and Trends differ** by a few percent in a normal month: sales near the month edge can fall into the neighbouring Financial Report, refunds can be dated differently, and adjustments only appear in Reports. For an account that only sold on a few days, the gap can be large.
+- **Nothing half-done is used.** Downloads are written to the cache in one step, and every stored report is checked before it is read again (its own row count or totals). A damaged file is thrown away and downloaded again.
+- **Same numbers every time.** The exchange rates of a past day are stored, so a closed month always shows the same totals, even offline.
 - **Payment** is expected about 33 days after the month ends. Amounts are before tax withholding and bank fees, and Apple's own exchange rates differ slightly from the ones used here.
 
 ## Privacy

@@ -1,4 +1,4 @@
-export type Command = "report" | "setup" | "status" | "demo" | "help" | "version";
+export type Command = "report" | "setup" | "status" | "demo" | "doctor" | "update" | "help" | "version";
 
 export interface Args {
   command: Command;
@@ -18,6 +18,8 @@ const COMMANDS: Record<string, Command> = {
   setup: "setup",
   status: "status",
   demo: "demo",
+  doctor: "doctor",
+  update: "update",
   help: "help",
   version: "version",
 };
@@ -88,6 +90,8 @@ Usage
   asc-payout setup                 add, edit or remove accounts
   asc-payout status                show accounts and where files are kept
   asc-payout demo                  try it with made-up data
+  asc-payout doctor                check keys, access, clock and network
+  asc-payout update                install the latest version
 
 Options
   -a, --account <name>   account name or vendor number, or "all"
@@ -106,6 +110,8 @@ Environment
   ASC_PAYOUT_CURRENCY    default display currency
   ASC_PAYOUT_CONFIG_DIR, ASC_PAYOUT_CACHE_DIR
                          where settings and downloaded reports are kept
+  ASC_PAYOUT_NO_UPDATE_CHECK=1
+                         never look for new releases
   NO_COLOR=1             no colors     DEBUG=1  more detail
 
 https://github.com/erenacarboga/asc-payout

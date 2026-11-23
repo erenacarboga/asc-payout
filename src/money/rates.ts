@@ -1,3 +1,7 @@
+import { join } from "node:path";
+import { readJson, writeFileAtomic } from "../config/files";
+import { cacheDir } from "../config/paths";
+
 /**
  * Exchange rates into the display currency, as of a given day.
  *
@@ -88,14 +92,27 @@ async function findRate(from: string, to: string, date: string | null): Promise<
  * the latest rates, since future rates don't exist.
  */
 export async function getRates(currencies: Iterable<string>, to: string, date: string): Promise<RateTable> {
-  const asOf = date > new Date().toISOString().slice(0, 10) ? null : date;
+  const asOf = date >= new Date().toISOString().slice(0, 10) ? null : date;
   const rates = new Map<string, Rate>([[to, { value: 1, source: "ECB", date: asOf ?? "latest" }]]);
   const wanted = [...new Set(currencies)].filter((c) => c && c !== to);
-  const found = await Promise.all(wanted.map(async (c) => [c, await findRate(c, to, asOf)] as const));
+
+  // Rates of a past day never change: keep them, so a month always shows the same
+  // numbers and works offline. Today's and future days' rates are not stored.
+  const file = asOf ? join(cacheDir(), "rates", `${asOf}-${to}.json`) : null;
+  const stored = (file && readJson<Record<string, Rate>>(file)) || {};
+
+  const found = await Promise.all(
+    wanted.map(async (c) => [c, stored[c] && valid(stored[c].value) ? stored[c] : await findRate(c, to, asOf)] as const),
+  );
   const missing: string[] = [];
   for (const [c, rate] of found) {
     if (rate) rates.set(c, rate);
     else missing.push(c);
+  }
+  if (file) {
+    const merged = { ...stored };
+    for (const [c, rate] of rates) if (c !== to) merged[c] = rate;
+    if (Object.keys(merged).length > Object.keys(stored).length) writeFileAtomic(file, JSON.stringify(merged, null, 1));
   }
   return { currency: to, rates, missing };
 }

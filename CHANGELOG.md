@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0
+
+- Reports are written to the cache in one step and checked before every use (row count or totals against the report's own summary); a damaged or incomplete file is downloaded again instead of being counted.
+- Exchange rates of past days are stored: a closed month always shows the same totals, also offline.
+- `asc-payout doctor`: checks clock, keys, access to Sales reports, Financial Reports and the app list, exchange-rate services and the cache folder, and says how to fix problems.
+- `asc-payout update`: installs the latest release in place (checksum verified); a quiet hint appears once a day when a new release is out (`ASC_PAYOUT_NO_UPDATE_CHECK=1` turns it off).
+- Rows that include an amount without an exchange rate are marked with `*`.
+- End-to-end tests against a simulated App Store Connect (missing days, rate limits, server errors, incomplete files, no access) and tests for setup and menus.
+
 ## 1.1.0
 
 - The screen is cleared when asc-payout starts, like `clear`; `--no-clear` or `ASC_PAYOUT_NO_CLEAR=1` keeps it. Never for `--json` or piped output.

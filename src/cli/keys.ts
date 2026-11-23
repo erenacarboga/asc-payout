@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, delimiter, join, resolve } from "node:path";
 import { ensureDir, keysDir } from "../config/paths";
 
 const KEY_FILE = /^AuthKey_([A-Z0-9]{10})\.p8$/;
@@ -12,6 +12,8 @@ export function keyIdFromFileName(path: string): string | null {
 
 /** Folders where a freshly downloaded .p8 usually is. */
 export function keySearchFolders(): string[] {
+  // ASC_PAYOUT_KEY_SEARCH lists the folders instead (separated like PATH)
+  if (process.env.ASC_PAYOUT_KEY_SEARCH) return process.env.ASC_PAYOUT_KEY_SEARCH.split(delimiter).filter(Boolean);
   const home = homedir();
   return [join(home, "Downloads"), join(home, "Desktop"), join(home, "Documents"), home, process.cwd(), keysDir()];
 }

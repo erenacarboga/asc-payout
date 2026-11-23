@@ -1,4 +1,4 @@
-import { confirm, input, select } from "@inquirer/prompts";
+import { ui } from "./ui";
 import { existsSync } from "node:fs";
 import { loadCatalog } from "../asc/catalog";
 import { checkSalesAccess } from "../asc/reports";
@@ -9,7 +9,7 @@ import { checkKeyFile, cleanPath, findKeyFiles, keyIdFromFileName, storeKeyFile 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const KEY_ID = /^[A-Z0-9]{10}$/;
 
-const say = (text = "") => console.log(text ? `  ${text}` : "");
+const say = (text = "") => ui.print(text ? `  ${text}` : "");
 
 async function askNewKey(defaultIssuer?: string): Promise<ApiKey> {
   say();
@@ -20,22 +20,22 @@ async function askNewKey(defaultIssuer?: string): Promise<ApiKey> {
   const found = findKeyFiles();
   let file: string;
   if (found.length > 0) {
-    const picked = await select({
+    const picked = await ui.select({
       message: ".p8 key file:",
       choices: [
         ...found.slice(0, 8).map((f) => ({ name: f.path, value: f.path })),
         { name: "Another file...", value: "" },
       ],
     });
-    file = picked || (await input({ message: "Path to the .p8 file:", validate: checkKeyFile }));
+    file = picked || (await ui.input({ message: "Path to the .p8 file:", validate: checkKeyFile }));
   } else {
-    file = await input({ message: "Path to the .p8 file (you can drag it here):", validate: checkKeyFile });
+    file = await ui.input({ message: "Path to the .p8 file (you can drag it here):", validate: checkKeyFile });
   }
   file = cleanPath(file);
 
   const fromName = keyIdFromFileName(file);
   const keyId = (
-    await input({
+    await ui.input({
       message: "Key ID:",
       default: fromName ?? undefined,
       validate: (v) => (KEY_ID.test(v.trim()) ? true : "10 letters and digits, shown next to the key in App Store Connect"),
@@ -43,7 +43,7 @@ async function askNewKey(defaultIssuer?: string): Promise<ApiKey> {
   ).trim();
 
   const issuerId = (
-    await input({
+    await ui.input({
       message: "Issuer ID (above the keys list):",
       default: defaultIssuer,
       validate: (v) => (UUID.test(v.trim()) ? true : "Looks like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"),
@@ -65,7 +65,7 @@ async function askKey(others: Account[], current?: ApiKey): Promise<ApiKey> {
   }
   choices.push({ name: "A new API key", value: { kind: "new" } });
 
-  const choice = choices.length === 1 ? choices[0].value : await select({ message: "API key:", choices });
+  const choice = choices.length === 1 ? choices[0].value : await ui.select({ message: "API key:", choices });
   if (choice.kind === "keep" && current) return current;
   if (choice.kind === "reuse") return choice.key;
   return askNewKey(current?.issuerId ?? others[0]?.key.issuerId);
@@ -90,7 +90,7 @@ async function askAccount(others: Account[], current?: Account): Promise<Account
   say();
   say("Vendor number: App Store Connect > Payments and Financial Reports, top left (8-9 digits).");
   const vendor = (
-    await input({
+    await ui.input({
       message: "Vendor number:",
       default: current?.vendor,
       validate: (v) => {
@@ -102,7 +102,7 @@ async function askAccount(others: Account[], current?: Account): Promise<Account
   ).trim();
 
   const name = (
-    await input({
+    await ui.input({
       message: "Name for this account (e.g. Company, Personal):",
       default: current?.name ?? (others.length === 0 ? "My apps" : `Account ${others.length + 1}`),
       validate: (v) => {
@@ -116,12 +116,12 @@ async function askAccount(others: Account[], current?: Account): Promise<Account
 
   const account: Account = { name, vendor, key, ...(current?.catalogKey ? { catalogKey: current.catalogKey } : {}) };
   if (await verify(account)) return account;
-  return (await confirm({ message: "Save it anyway?", default: false })) ? account : null;
+  return (await ui.confirm({ message: "Save it anyway?", default: false })) ? account : null;
 }
 
 async function editAccount(settings: Settings, target: Account): Promise<void> {
   const others = settings.accounts.filter((a) => a !== target);
-  const action = await select({
+  const action = await ui.select({
     message: `${target.name}:`,
     choices: [
       { name: "Change name, vendor number or key", value: "details" },
@@ -148,7 +148,7 @@ async function editAccount(settings: Settings, target: Account): Promise<void> {
 }
 
 async function askCurrency(current: string): Promise<string> {
-  const code = await select({
+  const code = await ui.select({
     message: "Show amounts in:",
     default: current,
     choices: [
@@ -157,7 +157,7 @@ async function askCurrency(current: string): Promise<string> {
     ],
   });
   if (code) return code;
-  return (await input({ message: "Currency code:", validate: (v) => (/^[a-z]{3}$/i.test(v.trim()) ? true : "3 letters, e.g. SEK") })).trim().toUpperCase();
+  return (await ui.input({ message: "Currency code:", validate: (v) => (/^[a-z]{3}$/i.test(v.trim()) ? true : "3 letters, e.g. SEK") })).trim().toUpperCase();
 }
 
 export async function runSetup(): Promise<void> {
@@ -185,7 +185,7 @@ export async function runSetup(): Promise<void> {
       for (const a of settings.accounts) say(`• ${a.name}  vendor ${a.vendor}, key ${a.key.keyId}`);
       say(`Currency: ${settings.currency}`);
       say();
-      const action = await select({
+      const action = await ui.select({
         message: "Setup:",
         choices: [
           { name: "Add an account", value: "add" },
@@ -203,12 +203,12 @@ export async function runSetup(): Promise<void> {
       } else if (action === "currency") {
         settings.currency = await askCurrency(settings.currency);
       } else {
-        const target = await select({
+        const target = await ui.select({
           message: action === "edit" ? "Which account?" : "Remove which account?",
           choices: settings.accounts.map((a) => ({ name: `${a.name} (vendor ${a.vendor})`, value: a })),
         });
         if (action === "edit") await editAccount(settings, target);
-        else if (await confirm({ message: `Remove "${target.name}"? (its key file stays in the keys folder)`, default: false })) {
+        else if (await ui.confirm({ message: `Remove "${target.name}"? (its key file stays in the keys folder)`, default: false })) {
           settings.accounts = settings.accounts.filter((a) => a !== target);
         }
       }

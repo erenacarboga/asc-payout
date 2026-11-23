@@ -66,6 +66,8 @@ Program açılınca ekranı temizler; istemezseniz `--no-clear` (veya `ASC_PAYOU
 
 `2026-10` gibi bir ay, adını taşıdığı mali aydır: Ekim 2026 = 27 Eylül - 31 Ekim 2026.
 
+Bir sorun olursa `asc-payout doctor` saati, anahtarları, her rapora erişimi, ağı ve önbelleği tek tek kontrol eder ve düzeltme yolunu yazar. `asc-payout update` en son sürümü kurar.
+
 ## Hesaplama
 
 - **Mali ay**: Apple'ın mali yılı Eylül'ün son cumartesi biter; çeyrekler 5, 4 ve 4 haftadır, 53 haftalık yıllarda fazla hafta Aralık'a eklenir. Financial Report varsa tarihler rapordan alınır.
@@ -74,6 +76,8 @@ Program açılınca ekranı temizler; istemezseniz `--no-clear` (veya `ASC_PAYOU
 - **Tahmin**: Devam eden ayda şu ana kadarki satış + kalan günler × son 7 günün ortalaması.
 - **Kurlar**: İki sütun da ayın son günündeki kurla çevrilir (ECB; ECB'de olmayanlar için exchange-api ve open.er-api). Kuru bulunamayan tutar ayrıca listelenir, asla 1:1 sayılmaz.
 - **Fark**: Normal bir ayda Reports ile Trends birkaç yüzde farklıdır; ay sınırındaki satışlar komşu aya, iadeler farklı tarihe düşebilir, bazı düzeltmeler sadece Reports'ta görünür.
+- **Yarım iş kullanılmaz**: İndirilen raporlar önbelleğe tek adımda yazılır ve her kullanımda kendi satır sayısı veya toplamlarıyla kontrol edilir; bozuk dosya silinip yeniden indirilir.
+- **Her seferinde aynı sonuç**: Geçmiş bir günün kurları saklanır; kapanmış bir ay internet olmadan da hep aynı toplamı verir.
 - **Ödeme**: Ay bitiminden yaklaşık 33 gün sonra. Tutarlar vergi kesintisi ve banka masrafı öncesidir.
 
 ## Gizlilik

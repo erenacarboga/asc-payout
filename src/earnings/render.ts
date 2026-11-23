@@ -21,7 +21,8 @@ export function renderMonth(r: MonthResult): string {
   const out: string[] = [];
   const m = (n: number) => money(n, r.currency);
   const hasReports = r.reports.total !== null;
-  const reportsCell = (n: number) => (hasReports ? m(n) : "—");
+  const reportsCell = (n: number, mark?: boolean) => (hasReports ? m(n) + (mark ? "*" : "") : "—");
+  const trendsCell = (n: number, mark?: boolean) => m(n) + (mark ? "*" : "");
   const rule = "  " + "─".repeat(WIDTH);
 
   out.push("");
@@ -31,11 +32,11 @@ export function renderMonth(r: MonthResult): string {
   out.push(rule);
   r.apps.forEach((app, i) => {
     if (i > 0) out.push("");
-    out.push(bold(`  ${fit(app.name, NAME - 1)} ${reportsCell(app.reports).padStart(AMOUNT)}${m(app.trends).padStart(AMOUNT)}`));
+    out.push(bold(`  ${fit(app.name, NAME - 1)} ${reportsCell(app.reports, app.unconverted?.reports).padStart(AMOUNT)}${trendsCell(app.trends, app.unconverted?.trends).padStart(AMOUNT)}`));
     const showItems = !(app.items.length === 1 && app.items[0].name === "(App sales)");
     if (showItems) {
       for (const item of app.items) {
-        out.push(dim(`    ${fit(item.name, NAME - 3)} ${reportsCell(item.reports).padStart(AMOUNT)}${m(item.trends).padStart(AMOUNT)}`));
+        out.push(dim(`    ${fit(item.name, NAME - 3)} ${reportsCell(item.reports, item.unconverted?.reports).padStart(AMOUNT)}${trendsCell(item.trends, item.unconverted?.trends).padStart(AMOUNT)}`));
       }
     }
   });
@@ -94,7 +95,7 @@ export function renderMonth(r: MonthResult): string {
   // Rates
   out.push(`  Rates     as of ${shortDate(r.rates.date)}${r.rates.sources ? ` · ${r.rates.sources}` : ""}`);
   for (const u of r.rates.unconverted) {
-    out.push(yellow(`            No exchange rate for ${rawAmount(u.amount, u.currency)}; not included in the ${u.in} total.`));
+    out.push(yellow(`            No exchange rate for ${rawAmount(u.amount, u.currency)}; not included in the ${u.in} total (rows marked *).`));
   }
   out.push(dim("            Before tax withholding and bank fees; Apple's rates differ slightly."));
   out.push("");

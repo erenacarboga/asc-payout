@@ -7,6 +7,8 @@ export interface Line {
   name: string;
   reports: number;
   trends: number;
+  /** some of the amounts behind this line had no exchange rate (not in the numbers) */
+  unconverted?: { reports?: boolean; trends?: boolean };
 }
 
 export interface AppGroup extends Line {
@@ -83,6 +85,10 @@ export function groupByApp(
     const value = convert(p.amounts, table);
     line[field] += value;
     group[field] += value;
+    if (table.missing.some((c) => p.amounts[c])) {
+      line.unconverted = { ...line.unconverted, [field]: true };
+      group.unconverted = { ...group.unconverted, [field]: true };
+    }
   };
 
   for (const p of reports?.values() ?? []) add(p, "reports");

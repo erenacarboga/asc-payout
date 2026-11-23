@@ -4,7 +4,12 @@ import { tokenFor } from "./token";
 
 const API = "https://api.appstoreconnect.apple.com";
 const TIMEOUT_MS = 60_000;
-const RETRY_DELAYS_MS = [2000, 4000, 8000];
+let RETRY_DELAYS_MS = [2000, 4000, 8000];
+
+/** For tests: wait this long between retries. */
+export function setRetryDelays(delays: number[]): void {
+  RETRY_DELAYS_MS = delays;
+}
 
 /** An error answer from App Store Connect. */
 export class AscError extends Error {

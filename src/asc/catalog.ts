@@ -1,6 +1,6 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ensureDir, vendorCacheDir } from "../config/paths";
+import { readJson, writeFileAtomic } from "../config/files";
+import { vendorCacheDir } from "../config/paths";
 import type { Account, ApiKey } from "../config/settings";
 import type { Product } from "../reports/tsv";
 import { ascAll } from "./client";
@@ -30,17 +30,13 @@ const MAX_AGE_MS = 7 * 86_400_000;
 const file = (vendor: string) => join(vendorCacheDir(vendor), "catalog.json");
 
 function readCatalog(vendor: string): Catalog {
-  try {
-    if (existsSync(file(vendor))) return JSON.parse(readFileSync(file(vendor), "utf-8")) as Catalog;
-  } catch {
-    // rebuilt below
-  }
+  const cached = readJson<Catalog>(file(vendor));
+  if (cached && Array.isArray(cached.apps) && cached.parents && cached.names) return cached;
   return { apps: [], parents: {}, names: {} };
 }
 
 function writeCatalog(vendor: string, catalog: Catalog): void {
-  ensureDir(vendorCacheDir(vendor));
-  writeFileSync(file(vendor), JSON.stringify(catalog, null, 1), "utf-8");
+  writeFileAtomic(file(vendor), JSON.stringify(catalog, null, 1));
 }
 
 type AppResource = { id: string; attributes: { name: string; sku: string } };
